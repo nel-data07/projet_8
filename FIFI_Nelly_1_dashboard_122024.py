@@ -161,7 +161,7 @@ if selected == "Prédictions":
                     fig, ax = plt.subplots(figsize=(12, 8))
                     comparison_df.plot(
                         x="Feature",
-                        y=["Importance", "Global Importance"],
+                        y=["caracteristique locale client", "caracteristique globale"],
                         kind="bar",
                         ax=ax,
                         color=["#1f77b4", "#ff7f0e"],
