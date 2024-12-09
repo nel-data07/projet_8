@@ -268,34 +268,54 @@ if selected == "Analyse Bi-Variée":
     st.title("Analyse Bi-Variée")
 
     if os.path.exists(FILE_PATH):
+        # Charger les données clients
         clients_data = pd.read_csv(FILE_PATH)
+        
+        # Vérifiez si les données sont bien chargées
+        if clients_data.empty:
+            st.warning("Le fichier de données des clients est vide ou n'a pas été chargé correctement.")
+        else:
+            # Liste des colonnes disponibles (excluant SK_ID_CURR)
+            available_features = [col for col in clients_data.columns if col != "SK_ID_CURR"]
 
-        # Liste des colonnes disponibles (excluant SK_ID_CURR)
-        available_features = [col for col in clients_data.columns if col != "SK_ID_CURR"]
+            # Sélection des deux features (X et Y)
+            feature_x = st.selectbox("Choisissez la 1ère variable (X)", available_features)
+            feature_y = st.selectbox("Choisissez la 2ème variable (Y)", available_features)
 
-        # Sélection des deux features (X et Y)
-        feature_x = st.selectbox("Choisissez la 1ère variable (X)", available_features)
-        feature_y = st.selectbox("Choisissez la 2ème variable (Y)", available_features)
+            if feature_x and feature_y:
+                # Vérifiez si les colonnes sont disponibles dans les données
+                if feature_x not in clients_data.columns or feature_y not in clients_data.columns:
+                    st.error(f"Les colonnes '{feature_x}' ou '{feature_y}' ne sont pas présentes dans le DataFrame.")
+                else:
+                    # Nettoyage des colonnes X et Y
+                    clients_data[feature_x] = pd.to_numeric(clients_data[feature_x], errors='coerce')
+                    clients_data[feature_y] = pd.to_numeric(clients_data[feature_y], errors='coerce')
 
-        if feature_x and feature_y:
-            fig, ax = plt.subplots(figsize=(8, 5))  # Taille ajustée du graphique
-            sns.scatterplot(
-                data=clients_data,
-                x=feature_x,
-                y=feature_y,
-                hue='default_status',  # Si disponible, colorie les points par statut de défaut
-                palette='viridis',
-                ax=ax
-            )
-            ax.set_title(f'Analyse bi-variée: {feature_x} vs {feature_y}', fontsize=14)
-            ax.set_xlabel(feature_x, fontsize=12)
-            ax.set_ylabel(feature_y, fontsize=12)
-            
-            st.pyplot(fig)
-            st.caption(
-                f"Ce graphique de dispersion montre la relation entre {feature_x} et {feature_y} "
-                "pour l'ensemble des clients. Les points sont colorés en fonction de la variable 'default_status'."
-            )
+                    # Suppression des lignes avec des NaN dans X ou Y
+                    filtered_data = clients_data.dropna(subset=[feature_x, feature_y])
+
+                    if filtered_data.empty:
+                        st.warning(f"Aucune donnée disponible après suppression des NaN pour les colonnes '{feature_x}' et '{feature_y}'.")
+                    else:
+                        # Création du graphique
+                        fig, ax = plt.subplots(figsize=(8, 5))  # Ajuster la taille du graphique
+                        sns.scatterplot(
+                            data=filtered_data,
+                            x=feature_x,
+                            y=feature_y,
+                            hue='default_status' if 'default_status' in filtered_data.columns else None,
+                            palette='viridis',
+                            ax=ax
+                        )
+                        ax.set_title(f'Analyse bi-variée: {feature_x} vs {feature_y}', fontsize=14)
+                        ax.set_xlabel(feature_x, fontsize=12)
+                        ax.set_ylabel(feature_y, fontsize=12)
+                        
+                        st.pyplot(fig)
+                        st.caption(
+                            f"Ce graphique de dispersion montre la relation entre {feature_x} et {feature_y} "
+                            "pour l'ensemble des clients. Les points sont colorés en fonction de la variable 'default_status' (si disponible)."
+                        )
     else:
         st.warning("Les données des clients ne sont pas disponibles.")
 
