@@ -83,23 +83,8 @@ if selected == "Prédictions":
                 shap_values = data.get("shap_values", [])
                 feature_names = data.get("feature_names", [])
 
-                # Simuler les données du client si non disponibles localement
-                if "clients_data" in globals():
-                    client_info = clients_data[clients_data["SK_ID_CURR"] == selected_id]
-                else:
-                    client_info = pd.DataFrame(
-                        [{"SK_ID_CURR": selected_id, "AGE": 35, "SEX": "F", "STATUS": "Actif", "INCOME": 50000}],
-                        columns=["SK_ID_CURR", "AGE", "SEX", "STATUS", "INCOME"]
-                    )
-
-                # SECTION 1 : Informations descriptives du client
-                st.subheader("Informations descriptives du client")
-                if not client_info.empty:
-                    st.table(client_info.iloc[:, :5])  # Affiche les 5 premières colonnes
-                else:
-                    st.warning("Aucune information disponible pour ce client.")
-
-                # SECTION 2 : Résultat de la prédiction
+            
+                # SECTION 1 : Résultat de la prédiction
                 st.subheader("Résultat de la prédiction")
                 optimal_threshold = 0.08
                 if prediction > optimal_threshold:
@@ -110,7 +95,7 @@ if selected == "Prédictions":
                 # Afficher le seuil
                 st.markdown(f"**Seuil utilisé pour la décision : {optimal_threshold:.2f}**")
 
-                # SECTION 3 : Graphique des 10 principales caractéristiques locales importantes
+                # SECTION 2 : Graphique des 10 principales caractéristiques locales importantes
                 st.subheader("Top 10 des caractéristiques locales importantes")
                 shap_df = pd.DataFrame({'Feature': feature_names, 'Importance': shap_values})
                 shap_df = shap_df.sort_values(by='Importance', ascending=False)
@@ -129,27 +114,43 @@ if selected == "Prédictions":
 
                 st.pyplot(fig)
 
-                # SECTION 4 : Tableau interactif des SHAP values
+                # SECTION 3 : Tableau interactif des SHAP values
                 st.subheader("Tableau interactif des SHAP values")
                 st.dataframe(shap_df.style.set_properties(**{'font-size': '14pt', 'padding': '5px'}), height=400)
                 
-                # SECTION 5 : Comparaison des caractéristiques locales et globales
+                # SECTION 4 : Comparaison des caractéristiques locales et globales
                 st.subheader("Comparaison des caractéristiques locales et globales")
 
-                # Simuler des données de feature importance globale (à remplacer par des données réelles si disponibles)
-                # Exemple de données simulées
-                global_shap_values = {
-                    "Feature": feature_names,
-                    "Global Importance": [abs(val).mean() for val in shap_values]  # Moyenne absolue des SHAP values globales
-                }
+                # Vérifier la structure des shap_values
+                if isinstance(shap_values, list) and all(isinstance(val, list) for val in shap_values):
+                    # Si shap_values est une liste de listes (cas global), les convertir en DataFrame
+                    shap_df_full = pd.DataFrame(shap_values, columns=feature_names)
+
+                    # Calculer la moyenne absolue des SHAP values pour chaque feature (importance globale)
+                    global_shap_values = {
+                        "Feature": feature_names,
+                        "Global Importance": shap_df_full.abs().mean().tolist()
+                    }
+                elif isinstance(shap_values, list) or isinstance(shap_values, np.ndarray):
+                    # Si shap_values est un vecteur (cas local), utiliser directement les valeurs absolues
+                    global_shap_values = {
+                        "Feature": feature_names,
+                        "Global Importance": [abs(val) for val in shap_values]
+                    }
+                else:
+                    st.error("Format inattendu pour shap_values. Vérifiez les données.")
+                    global_shap_values = {"Feature": [], "Global Importance": []}
+
+                # Convertir les données globales en DataFrame
                 global_shap_df = pd.DataFrame(global_shap_values)
 
-                # Récupérer les données des 10 principales caractéristiques locales
-                comparison_df = shap_df_top.copy()
-                comparison_df = comparison_df.merge(global_shap_df, on="Feature")
+                # Fusionner les données locales et globales pour comparaison
+                comparison_df = shap_df_top.merge(global_shap_df, on="Feature", how="inner")
 
                 # Créer un graphique pour la comparaison
                 fig, ax = plt.subplots(figsize=(12, 8))
+
+                # Création d'un barplot pour comparer les importances locales et globales
                 comparison_df.plot(
                     x="Feature",
                     y=["Importance", "Global Importance"],
@@ -162,6 +163,8 @@ if selected == "Prédictions":
                 ax.set_ylabel("Importance")
                 ax.set_xlabel("Caractéristiques")
                 plt.xticks(rotation=45, ha="right")
+
+                # Afficher le graphique dans Streamlit
                 st.pyplot(fig)
 
               
