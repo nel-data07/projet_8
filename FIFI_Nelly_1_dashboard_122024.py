@@ -135,11 +135,27 @@ if selected == "Prédictions":
 
                 # SECTION 5 : Tableau interactif des données associées au client
                 st.subheader("Données associées au client")
+
+                # Créer un DataFrame des données du client
                 client_data_values = pd.DataFrame(
                     [{"Feature": col, "Value": val} for col, val in zip(client_info.columns, client_info.iloc[0])],
                     columns=["Feature", "Value"]
                 )
-                st.dataframe(client_data_values.style.set_properties(**{'font-size': '14pt', 'padding': '5px'}), height=400)
+
+                # Slider pour ajuster la hauteur du tableau
+                table_height = st.slider(
+                    "Ajustez la hauteur du tableau interactif (en pixels)",
+                    min_value=200,
+                    max_value=600,
+                    value=400,
+                    step=50
+                )
+
+                # Afficher le tableau interactif avec la hauteur réglable
+                st.dataframe(
+                    client_data_values.style.set_properties(**{'font-size': '14pt', 'padding': '5px'}),
+                    height=table_height
+                )
 
 ##### page analyse caracteristique        
 if selected == "Analyse des Caractéristiques":
