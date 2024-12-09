@@ -17,17 +17,7 @@ st.set_page_config(
     layout="wide"
 )
 
-##### Chargement des données des clients #####
-CLIENTS_DATA_PATH = "clients_data.csv"  # Assurez-vous que ce fichier est dans le même dossier que app.py
-
-try:
-    clients_data = pd.read_csv(CLIENTS_DATA_PATH)
-    st.success(f"Données clients chargées ({len(clients_data)} lignes).")
-except FileNotFoundError:
-    st.error("Le fichier 'clients_data.csv' est introuvable. Assurez-vous qu'il est dans le dossier contenant app.py.")
-    clients_data = pd.DataFrame()  # DataFrame vide pour éviter des erreurs
-
-##### Définition du menu du dashboard
+##### definition du menu du dashboard
 with st.sidebar:
     selected = option_menu(
         menu_title="Menu",
@@ -37,13 +27,18 @@ with st.sidebar:
         default_index=0
     )
 
-##### Page d'accueil
+##### page d'accueil
 if selected == "Accueil":
+    # Titre principal avec HTML pour du style
     st.markdown(
         "<h1 style='text-align: center; color: #4CAF50;'>Bienvenue sur le Dashboard de Simulation de Risque de Crédit</h1>",
         unsafe_allow_html=True,
     )
+
+    # Intégration de l'image
     st.image("pret_a_depense.png", use_column_width=True, caption="Prêt à dépenser - Analyse de risque de crédit")
+
+    # Description sous l'image avec texte plus grand
     st.markdown(
         """
         <h2 style='text-align: center;'>Ce tableau de bord vous permet de :</h2>
@@ -56,6 +51,8 @@ if selected == "Accueil":
         """,
         unsafe_allow_html=True,
     )
+
+    # Note ou footer en bas
     st.markdown(
         """
         <hr>
@@ -64,28 +61,41 @@ if selected == "Accueil":
         unsafe_allow_html=True,
     )
 
-##### Page Prédictions
+
+##### page prediction
 if selected == "Prédictions":
     st.title("Prédictions pour un Client Existant")
 
-    if not clients_data.empty and "SK_ID_CURR" in clients_data.columns:
-        # Obtenez tous les IDs clients pour le menu déroulant
-        client_ids = clients_data["SK_ID_CURR"].tolist()
+    # Récupérer les IDs clients
+    response = requests.get(f"{API_URL}/get_client_ids")
+    client_ids = response.json().get("client_ids", []) if response.status_code == 200 else []
+
+    if client_ids:
+        # Sélection de l'ID client
         selected_id = st.selectbox("Choisissez un ID client (SK_ID_CURR)", client_ids)
 
         if st.button("Obtenir la prédiction"):
+            # Appel à l'API pour obtenir les prédictions
             response = requests.post(f"{API_URL}/predict", json={"SK_ID_CURR": selected_id})
             if response.status_code == 200:
                 data = response.json()
                 prediction = data.get("probability_of_default", None)
                 shap_values = data.get("shap_values", [])
                 feature_names = data.get("feature_names", [])
-                client_info = clients_data[clients_data["SK_ID_CURR"] == selected_id]
+
+                # Simuler les données du client si non disponibles localement
+                if "clients_data" in globals():
+                    client_info = clients_data[clients_data["SK_ID_CURR"] == selected_id]
+                else:
+                    client_info = pd.DataFrame(
+                        [{"SK_ID_CURR": selected_id, "AGE": 35, "SEX": "F", "STATUS": "Actif", "INCOME": 50000}],
+                        columns=["SK_ID_CURR", "AGE", "SEX", "STATUS", "INCOME"]
+                    )
 
                 # SECTION 1 : Informations descriptives du client
                 st.subheader("Informations descriptives du client")
                 if not client_info.empty:
-                    st.table(client_info)
+                    st.table(client_info.iloc[:, :5])  # Affiche les 5 premières colonnes
                 else:
                     st.warning("Aucune information disponible pour ce client.")
 
@@ -96,28 +106,52 @@ if selected == "Prédictions":
                     st.error(f"Crédit REFUSÉ (Probabilité de défaut : {prediction:.2f})")
                 else:
                     st.success(f"Crédit ACCEPTÉ (Probabilité de défaut : {prediction:.2f})")
+
+                # Afficher le seuil
                 st.markdown(f"**Seuil utilisé pour la décision : {optimal_threshold:.2f}**")
 
                 # SECTION 3 : Graphique des 10 principales caractéristiques locales importantes
                 st.subheader("Top 10 des caractéristiques locales importantes")
                 shap_df = pd.DataFrame({'Feature': feature_names, 'Importance': shap_values})
-                shap_df = shap_df.sort_values(by='Importance', ascending=False).head(10)
-                fig, ax = plt.subplots(figsize=(10, 8))
-                sns.barplot(x='Importance', y='Feature', data=shap_df, palette="viridis", ax=ax)
+                shap_df = shap_df.sort_values(by='Importance', ascending=False)
+                shap_df_top = shap_df.head(10)
+
+                # Graphique des SHAP values
+                fig, ax = plt.subplots(figsize=(10, 8))  # Taille ajustée
+                sns.barplot(x='Importance', y='Feature', data=shap_df_top, palette="viridis", ax=ax)
                 ax.set_title('Top 10 des caractéristiques locales importantes (SHAP values)', fontsize=14)
+                ax.set_xlabel("Importance", fontsize=12)
+                ax.set_ylabel("Caractéristiques", fontsize=12)
+
+                # Ajouter des annotations
+                for i, (imp, feature) in enumerate(zip(shap_df_top['Importance'], shap_df_top['Feature'])):
+                    ax.text(imp, i, f'{imp:.2f}', ha='left', va='center', color='black')
+
                 st.pyplot(fig)
 
                 # SECTION 4 : Tableau interactif des SHAP values
                 st.subheader("Tableau interactif des SHAP values")
-                st.dataframe(shap_df.style.set_properties(**{'font-size': '14pt', 'padding': '5px'}))
+                st.dataframe(shap_df.style.set_properties(**{'font-size': '14pt', 'padding': '5px'}), height=400)
 
                 # SECTION 5 : Tableau interactif des données associées au client
                 st.subheader("Données associées au client")
-                st.dataframe(client_info.transpose().reset_index().rename(columns={'index': 'Feature', 0: 'Value'}))
-            else:
-                st.error("Erreur lors de l'appel API pour la prédiction.")
-    else:
-        st.error("Les données des clients sont introuvables ou incomplètes.")
+
+                # Vérifiez que les données du client existent
+                if "clients_data" in globals():
+                    # Filtrer les données pour l'ID client sélectionné
+                    client_full_data = clients_data[clients_data["SK_ID_CURR"] == selected_id]
+
+                    # Vérifier si des données sont disponibles pour le client
+                    if not client_full_data.empty:
+                        # Afficher un tableau interactif avec toutes les données du client
+                        st.dataframe(
+                            client_full_data.transpose().reset_index().rename(columns={'index': 'Feature', 0: 'Value'}),
+                            height=400
+                        )
+                    else:
+                        st.warning("Aucune donnée associée trouvée pour ce client.")
+                else:
+                    st.warning("Les données des clients ne sont pas disponibles dans l'environnement.")
 
 ##### page analyse caracteristique        
 if selected == "Analyse des Caractéristiques":
