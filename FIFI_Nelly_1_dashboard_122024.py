@@ -267,16 +267,37 @@ if selected == "Analyse des Caractéristiques":
 if selected == "Analyse Bi-Variée":
     st.title("Analyse Bi-Variée")
 
-    feature_x = st.selectbox("Choisissez la 1ère variable", ['age', 'income', 'loan_amount'])
-    feature_y = st.selectbox("Choisissez la 2ème variable", ['credit_score', 'debt_ratio', 'installment'])
+    if os.path.exists(FILE_PATH):
+        clients_data = pd.read_csv(FILE_PATH)
 
-    if feature_x and feature_y:
-        fig, ax = plt.subplots()
-        sns.scatterplot(data=clients_data, x=feature_x, y=feature_y, hue='default_status', palette='viridis', ax=ax)
-        ax.set_title(f'Analyse bi-variée: {feature_x} vs {feature_y}', fontsize=14)
-        
-        st.pyplot(fig)
-        st.caption(f"Ce graphique de dispersion montre la relation entre {feature_x} et {feature_y} pour l'ensemble des clients. Les points sont colorés en fonction de la variable 'default_status'.")
+        # Liste des colonnes disponibles (excluant SK_ID_CURR)
+        available_features = [col for col in clients_data.columns if col != "SK_ID_CURR"]
+
+        # Sélection des deux features (X et Y)
+        feature_x = st.selectbox("Choisissez la 1ère variable (X)", available_features)
+        feature_y = st.selectbox("Choisissez la 2ème variable (Y)", available_features)
+
+        if feature_x and feature_y:
+            fig, ax = plt.subplots(figsize=(8, 5))  # Taille ajustée du graphique
+            sns.scatterplot(
+                data=clients_data,
+                x=feature_x,
+                y=feature_y,
+                hue='default_status',  # Si disponible, colorie les points par statut de défaut
+                palette='viridis',
+                ax=ax
+            )
+            ax.set_title(f'Analyse bi-variée: {feature_x} vs {feature_y}', fontsize=14)
+            ax.set_xlabel(feature_x, fontsize=12)
+            ax.set_ylabel(feature_y, fontsize=12)
+            
+            st.pyplot(fig)
+            st.caption(
+                f"Ce graphique de dispersion montre la relation entre {feature_x} et {feature_y} "
+                "pour l'ensemble des clients. Les points sont colorés en fonction de la variable 'default_status'."
+            )
+    else:
+        st.warning("Les données des clients ne sont pas disponibles.")
 
 ##### page modification des informations
 if selected == "Modification des informations":
