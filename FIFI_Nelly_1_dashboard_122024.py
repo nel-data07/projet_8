@@ -96,7 +96,7 @@ if selected == "Prédictions":
                 st.markdown(f"**Seuil utilisé pour la décision : {optimal_threshold:.2f}**")
 
                 # SECTION 2 : Graphique des 10 principales caractéristiques locales importantes
-                st.subheader("Top 10 des caractéristiques locales importantes")
+                st.subheader("Caractéristiques locales")
                 shap_df = pd.DataFrame({'Feature': feature_names, 'Importance': shap_values})
                 shap_df = shap_df.sort_values(by='Importance', ascending=False)
                 shap_df_top = shap_df.head(10)
@@ -121,28 +121,20 @@ if selected == "Prédictions":
                 # SECTION 4 : Comparaison des caractéristiques locales et globales
                 st.subheader("Comparaison des caractéristiques locales et globales")
 
-                # Vérifier la structure des shap_values
-                if isinstance(shap_values, list) and all(isinstance(val, list) for val in shap_values):
-                    # Si shap_values est une liste de listes (cas global), les convertir en DataFrame
-                    shap_df_full = pd.DataFrame(shap_values, columns=feature_names)
-
-                    # Calculer la moyenne absolue des SHAP values pour chaque feature (importance globale)
-                    global_shap_values = {
+                # Calculer les SHAP values globales à partir de toutes les données (simulé ici)
+                if "clients_data" in globals() and not clients_data.empty:
+                    # Simuler les SHAP values pour l'ensemble des clients (à remplacer par des SHAP globales réelles)
+                    # Extrait les SHAP values globales en supposant un calcul sur toutes les données
+                    global_shap_df = pd.DataFrame({
                         "Feature": feature_names,
-                        "Global Importance": shap_df_full.abs().mean().tolist()
-                    }
-                elif isinstance(shap_values, list) or isinstance(shap_values, np.ndarray):
-                    # Si shap_values est un vecteur (cas local), utiliser directement les valeurs absolues
-                    global_shap_values = {
+                        "Global Importance": [abs(val).mean() for val in zip(*shap_values)]
+                    })
+                else:
+                    st.warning("Les données globales pour les SHAP values ne sont pas disponibles. Les valeurs globales sont simulées.")
+                    global_shap_df = pd.DataFrame({
                         "Feature": feature_names,
                         "Global Importance": [abs(val) for val in shap_values]
-                    }
-                else:
-                    st.error("Format inattendu pour shap_values. Vérifiez les données.")
-                    global_shap_values = {"Feature": [], "Global Importance": []}
-
-                # Convertir les données globales en DataFrame
-                global_shap_df = pd.DataFrame(global_shap_values)
+                    })
 
                 # Fusionner les données locales et globales pour comparaison
                 comparison_df = shap_df_top.merge(global_shap_df, on="Feature", how="inner")
