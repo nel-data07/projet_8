@@ -5,6 +5,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from streamlit_option_menu import option_menu
+import os
 ################################################
 # Charger les données clients
 FILE_PATH = "clients_data.csv"
