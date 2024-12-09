@@ -136,26 +136,22 @@ if selected == "Prédictions":
                 # SECTION 5 : Tableau interactif des données associées au client
                 st.subheader("Données associées au client")
 
-                # Créer un DataFrame des données du client
-                client_data_values = pd.DataFrame(
-                    [{"Feature": col, "Value": val} for col, val in zip(client_info.columns, client_info.iloc[0])],
-                    columns=["Feature", "Value"]
-                )
+                # Vérifiez que les données du client existent
+                if "clients_data" in globals():
+                    # Filtrer les données pour l'ID client sélectionné
+                    client_full_data = clients_data[clients_data["SK_ID_CURR"] == selected_id]
 
-                # Slider pour ajuster la hauteur du tableau
-                table_height = st.slider(
-                    "Ajustez la hauteur du tableau interactif (en pixels)",
-                    min_value=200,
-                    max_value=600,
-                    value=400,
-                    step=50
-                )
-
-                # Afficher le tableau interactif avec la hauteur réglable
-                st.dataframe(
-                    client_data_values.style.set_properties(**{'font-size': '14pt', 'padding': '5px'}),
-                    height=table_height
-                )
+                    # Vérifier si des données sont disponibles pour le client
+                    if not client_full_data.empty:
+                        # Afficher un tableau interactif avec toutes les données du client
+                        st.dataframe(
+                            client_full_data.transpose().reset_index().rename(columns={'index': 'Feature', 0: 'Value'}),
+                            height=400
+                        )
+                    else:
+                        st.warning("Aucune donnée associée trouvée pour ce client.")
+                else:
+                    st.warning("Les données des clients ne sont pas disponibles dans l'environnement.")
 
 ##### page analyse caracteristique        
 if selected == "Analyse des Caractéristiques":
