@@ -178,7 +178,6 @@ if selected == "Prédictions":
                 else:
                     st.warning("Impossible de récupérer les importances globales. Vérifiez l'API.")
               
-              
 ##### page analyse caracteristique        
 if selected == "Analyse des Caractéristiques":
     st.title("Analyse des Caractéristiques Clients")
@@ -187,8 +186,8 @@ if selected == "Analyse des Caractéristiques":
     if os.path.exists(FILE_PATH):
         clients_data = pd.read_csv(FILE_PATH)
 
-        # Liste de toutes les colonnes (features) disponibles
-        all_features = clients_data.columns.tolist()
+        # Liste de toutes les colonnes (features) disponibles, excluant `SK_ID_CURR`
+        all_features = [col for col in clients_data.columns if col != "SK_ID_CURR"]
 
         # Récupérer les IDs clients via l'API
         response = requests.get(f"{API_URL}/get_client_ids")
@@ -224,7 +223,7 @@ if selected == "Analyse des Caractéristiques":
 
                     # Vérifier si la caractéristique existe dans les données
                     if feature_selected in clients_data.columns:
-                        fig, ax = plt.subplots()
+                        fig, ax = plt.subplots(figsize=(8, 5))  # Taille réduite
                         sns.histplot(
                             data=clients_data,
                             x=feature_selected,
@@ -263,7 +262,7 @@ if selected == "Analyse des Caractéristiques":
             st.warning("Aucun client disponible. Veuillez vérifier les données.")
     else:
         st.warning("Les données globales des clients ne sont pas disponibles pour la comparaison.")
-                   
+              
 ##### page analyse bi-variée
 if selected == "Analyse Bi-Variée":
     st.title("Analyse Bi-Variée")
