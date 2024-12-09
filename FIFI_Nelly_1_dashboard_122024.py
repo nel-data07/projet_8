@@ -132,27 +132,39 @@ if selected == "Prédictions":
                 # SECTION 4 : Tableau interactif des SHAP values
                 st.subheader("Tableau interactif des SHAP values")
                 st.dataframe(shap_df.style.set_properties(**{'font-size': '14pt', 'padding': '5px'}), height=400)
+                
+                # SECTION 5 : Comparaison des caractéristiques locales et globales
+                st.subheader("Comparaison des caractéristiques locales et globales")
 
-                # SECTION 5 : Tableau interactif des données associées au client
-                st.subheader("Données associées au client")
+                # Simuler des données de feature importance globale (à remplacer par des données réelles si disponibles)
+                # Exemple de données simulées
+                global_shap_values = {
+                    "Feature": feature_names,
+                    "Global Importance": [abs(val).mean() for val in shap_values]  # Moyenne absolue des SHAP values globales
+                }
+                global_shap_df = pd.DataFrame(global_shap_values)
 
-                # Vérifiez que les données du client existent
-                if "clients_data" in globals():
-                    # Filtrer les données pour l'ID client sélectionné
-                    client_full_data = clients_data[clients_data["SK_ID_CURR"] == selected_id]
+                # Récupérer les données des 10 principales caractéristiques locales
+                comparison_df = shap_df_top.copy()
+                comparison_df = comparison_df.merge(global_shap_df, on="Feature")
 
-                    # Vérifier si des données sont disponibles pour le client
-                    if not client_full_data.empty:
-                        # Afficher un tableau interactif avec toutes les données du client
-                        st.dataframe(
-                            client_full_data.transpose().reset_index().rename(columns={'index': 'Feature', 0: 'Value'}),
-                            height=400
-                        )
-                    else:
-                        st.warning("Aucune donnée associée trouvée pour ce client.")
-                else:
-                    st.warning("Les données des clients ne sont pas disponibles dans l'environnement.")
+                # Créer un graphique pour la comparaison
+                fig, ax = plt.subplots(figsize=(12, 8))
+                comparison_df.plot(
+                    x="Feature",
+                    y=["Importance", "Global Importance"],
+                    kind="bar",
+                    ax=ax,
+                    color=["#1f77b4", "#ff7f0e"],
+                    title="Comparaison des caractéristiques locales et globales"
+                )
 
+                ax.set_ylabel("Importance")
+                ax.set_xlabel("Caractéristiques")
+                plt.xticks(rotation=45, ha="right")
+                st.pyplot(fig)
+
+              
 ##### page analyse caracteristique        
 if selected == "Analyse des Caractéristiques":
     st.title("Analyse des Caractéristiques Clients")
