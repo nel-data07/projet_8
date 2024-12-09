@@ -7,18 +7,12 @@ import seaborn as sns
 from streamlit_option_menu import option_menu
 import os
 ################################################
-# Charger les données clients
-FILE_PATH = "clients_data.csv"
-
-if os.path.exists(FILE_PATH):
-    clients_data = pd.read_csv(FILE_PATH)
-    st.success("Fichier clients_data.csv chargé avec succès.")
-else:
-    clients_data = pd.DataFrame()  # Créer un DataFrame vide
-    st.error("Fichier clients_data.csv introuvable. Assurez-vous qu'il est dans le même dossier que le script.")
     
 ##### URL de l'API
 API_URL = "https://projet7-1.onrender.com"
+
+# Charger les données clients
+FILE_PATH = "clients_data.csv"
 
 ##### Configuration de la page
 st.set_page_config(
