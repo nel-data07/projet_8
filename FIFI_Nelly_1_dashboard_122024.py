@@ -68,8 +68,6 @@ if selected == "Accueil":
         unsafe_allow_html=True,
     )
 
-
-##### page prediction
 ##### page prediction
 if selected == "Prédictions":
     st.title("Prédictions pour un Client Existant")
@@ -90,13 +88,12 @@ if selected == "Prédictions":
                 prediction = data.get("probability_of_default", None)
                 shap_values = data.get("shap_values", [])
                 feature_names = data.get("feature_names", [])
+                client_info = data.get("client_info", {})
 
                 # SECTION 0 : Informations descriptives du client
                 st.subheader("Informations descriptives du client")
 
-                # Vérifiez si les informations du client sont disponibles
-                if "client_data" in data:  # Utiliser la clé correcte selon votre API
-                    client_info = data["client_data"]
+                if client_info:  # Vérifiez si les informations sont disponibles
                     client_info_df = pd.DataFrame(client_info.items(), columns=["Caractéristique", "Valeur"])
                     st.table(client_info_df)
                 else:
@@ -135,7 +132,37 @@ if selected == "Prédictions":
                 # SECTION 3 : Tableau interactif des SHAP values
                 st.subheader("Tableau interactif des SHAP values")
                 st.dataframe(shap_df.style.set_properties(**{'font-size': '14pt', 'padding': '5px'}), height=400)
+
+                # SECTION 4 : Comparaison des caractéristiques locales et globales
+                st.subheader("Comparaison des caractéristiques locales et globales")
                 
+                # Appel à l'API pour obtenir les importances globales
+                global_response = requests.get(f"{API_URL}/get_global_importance")
+                if global_response.status_code == 200:
+                    global_data = global_response.json().get("global_importances", [])
+                    global_shap_df = pd.DataFrame(global_data)
+
+                    # Fusion des données locales et globales
+                    comparison_df = shap_df_top.merge(global_shap_df, on="Feature", how="inner")
+
+                    # Créer un graphique comparatif
+                    fig, ax = plt.subplots(figsize=(12, 8))
+                    comparison_df.plot(
+                        x="Feature",
+                        y=["Importance", "Global Importance"],
+                        kind="bar",
+                        ax=ax,
+                        color=["#1f77b4", "#ff7f0e"],
+                        title="Comparaison des caractéristiques locales et globales"
+                    )
+                    ax.set_ylabel("Importance")
+                    ax.set_xlabel("Caractéristiques")
+                    plt.xticks(rotation=45, ha="right")
+
+                    # Afficher le graphique
+                    st.pyplot(fig)
+                else:
+                    st.warning("Impossible de récupérer les importances globales. Vérifiez l'API.")
               
               
 ##### page analyse caracteristique        
