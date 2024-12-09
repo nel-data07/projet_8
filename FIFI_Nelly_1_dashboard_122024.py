@@ -82,26 +82,44 @@ if selected == "Prédictions":
                 prediction = data.get("probability_of_default", None)
                 shap_values = data.get("shap_values", [])
                 feature_names = data.get("feature_names", [])
-                
-                # Afficher le score et la probabilité
+
+                # Simuler les données du client si non disponibles localement
+                if "clients_data" in globals():
+                    client_info = clients_data[clients_data["SK_ID_CURR"] == selected_id]
+                else:
+                    client_info = pd.DataFrame(
+                        [{"SK_ID_CURR": selected_id, "AGE": 35, "SEX": "F", "STATUS": "Actif", "INCOME": 50000}],
+                        columns=["SK_ID_CURR", "AGE", "SEX", "STATUS", "INCOME"]
+                    )
+
+                # SECTION 1 : Informations descriptives du client
+                st.subheader("Informations descriptives du client")
+                if not client_info.empty:
+                    st.table(client_info.iloc[:, :5])  # Affiche les 5 premières colonnes
+                else:
+                    st.warning("Aucune information disponible pour ce client.")
+
+                # SECTION 2 : Résultat de la prédiction
+                st.subheader("Résultat de la prédiction")
                 optimal_threshold = 0.08
                 if prediction > optimal_threshold:
                     st.error(f"Crédit REFUSÉ (Probabilité de défaut : {prediction:.2f})")
                 else:
                     st.success(f"Crédit ACCEPTÉ (Probabilité de défaut : {prediction:.2f})")
 
-                # Créer un DataFrame pour les SHAP values
+                # Afficher le seuil
+                st.markdown(f"**Seuil utilisé pour la décision : {optimal_threshold:.2f}**")
+
+                # SECTION 3 : Graphique des 10 principales caractéristiques locales importantes
+                st.subheader("Top 10 des caractéristiques locales importantes")
                 shap_df = pd.DataFrame({'Feature': feature_names, 'Importance': shap_values})
                 shap_df = shap_df.sort_values(by='Importance', ascending=False)
-
-                # Afficher uniquement les 10 principales caractéristiques
-                top_n = 10
-                shap_df_top = shap_df.head(top_n)
+                shap_df_top = shap_df.head(10)
 
                 # Graphique des SHAP values
                 fig, ax = plt.subplots(figsize=(10, 8))  # Taille ajustée
                 sns.barplot(x='Importance', y='Feature', data=shap_df_top, palette="viridis", ax=ax)
-                ax.set_title(f'Top {top_n} des caractéristiques locales importantes (SHAP values)', fontsize=14)
+                ax.set_title('Top 10 des caractéristiques locales importantes (SHAP values)', fontsize=14)
                 ax.set_xlabel("Importance", fontsize=12)
                 ax.set_ylabel("Caractéristiques", fontsize=12)
 
@@ -111,24 +129,17 @@ if selected == "Prédictions":
 
                 st.pyplot(fig)
 
-                # Tableau des SHAP values avec taille ajustée
-                st.subheader("Tableau des SHAP values")
+                # SECTION 4 : Tableau interactif des SHAP values
+                st.subheader("Tableau interactif des SHAP values")
                 st.dataframe(shap_df.style.set_properties(**{'font-size': '14pt', 'padding': '5px'}), height=400)
 
-                # Afficher les informations descriptives du client
-                st.subheader("Informations descriptives du client")
-                if "clients_data" in globals():
-                    client_info = clients_data[clients_data["SK_ID_CURR"] == selected_id]
-                else:
-                    client_info = pd.DataFrame(
-                        [{"SK_ID_CURR": selected_id, "AGE": 35, "INCOME": 50000, "LOAN_AMOUNT": 150000}],
-                        columns=["SK_ID_CURR", "AGE", "INCOME", "LOAN_AMOUNT"]
-                    )
-
-                if not client_info.empty:
-                    st.table(client_info.iloc[:, :10])  # Afficher les 10 premières colonnes descriptives
-                else:
-                    st.warning("Aucune information disponible pour ce client.")
+                # SECTION 5 : Tableau interactif des données associées au client
+                st.subheader("Données associées au client")
+                client_data_values = pd.DataFrame(
+                    [{"Feature": col, "Value": val} for col, val in zip(client_info.columns, client_info.iloc[0])],
+                    columns=["Feature", "Value"]
+                )
+                st.dataframe(client_data_values.style.set_properties(**{'font-size': '14pt', 'padding': '5px'}), height=400)
 
 ##### page analyse caracteristique        
 if selected == "Analyse des Caractéristiques":
