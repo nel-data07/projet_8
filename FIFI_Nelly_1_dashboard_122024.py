@@ -156,12 +156,16 @@ if selected == "Prédictions":
 
                     # Fusion des données locales et globales
                     comparison_df = shap_df_top.merge(global_shap_df, on="Feature", how="inner")
-
+                    # Renommer les colonnes pour le graphique
+                    comparison_df.rename(columns={
+                        "Importance": "Caracteristiques locale client",
+                        "Global Importance": "Caracteristiques globales"
+                    }, inplace=True)
                     # Créer un graphique comparatif
                     fig, ax = plt.subplots(figsize=(12, 8))
                     comparison_df.plot(
                         x="Feature",
-                        y=["caracteristique locale client", "caracteristique globale"],
+                        y=["Caracteristiques locale client", "Caracteristiques globales"],
                         kind="bar",
                         ax=ax,
                         color=["#1f77b4", "#ff7f0e"],
