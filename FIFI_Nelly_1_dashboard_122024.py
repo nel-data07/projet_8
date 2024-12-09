@@ -183,82 +183,82 @@ if selected == "Prédictions":
 if selected == "Analyse des Caractéristiques":
     st.title("Analyse des Caractéristiques Clients")
 
-        # Liste de toutes les colonnes (features) disponibles
-        all_features = clients_data.columns.tolist()
+                    # Liste de toutes les colonnes (features) disponibles
+                    all_features = clients_data.columns.tolist()
 
-        # Sélection de l'ID client
-        response = requests.get(f"{API_URL}/get_client_ids")
-        client_ids = response.json().get("client_ids", []) if response.status_code == 200 else []
+                    # Sélection de l'ID client
+                    response = requests.get(f"{API_URL}/get_client_ids")
+                    client_ids = response.json().get("client_ids", []) if response.status_code == 200 else []
 
-        if client_ids:
-            selected_id = st.selectbox("Choisissez un ID client (SK_ID_CURR)", client_ids)
+                    if client_ids:
+                        selected_id = st.selectbox("Choisissez un ID client (SK_ID_CURR)", client_ids)
 
-            if selected_id:
-                # Sélection de la caractéristique à analyser
-                feature_selected = st.selectbox(
-                    "Choisissez une caractéristique à explorer",
-                    all_features
-                )
-
-                # Appel API pour obtenir les données du client
-                response = requests.post(f"{API_URL}/predict", json={"SK_ID_CURR": selected_id})
-                if response.status_code == 200:
-                    data = response.json()
-                    client_value = data.get("client_info", {}).get(feature_selected)
-
-                    # Transformation des données spécifiques si nécessaire
-                    if feature_selected == "DAYS_BIRTH":
-                        clients_data["AGE"] = abs(clients_data["DAYS_BIRTH"]) // 365
-                        client_value = abs(client_value) // 365 if client_value else None
-                        feature_selected = "AGE"  # Renommer pour analyse
-                    elif feature_selected == "DAYS_EMPLOYED":
-                        clients_data["DAYS_EMPLOYED"] = clients_data["DAYS_EMPLOYED"].apply(
-                            lambda x: abs(x) // 365 if x < 0 else None
-                        )
-                        client_value = abs(client_value) // 365 if client_value and client_value < 0 else "Non employé"
-
-                    # Vérifier si la caractéristique existe dans les données
-                    if feature_selected in clients_data.columns:
-                        fig, ax = plt.subplots()
-                        sns.histplot(
-                            data=clients_data,
-                            x=feature_selected,
-                            kde=True,
-                            color="#1b9e77",
-                            ax=ax
-                        )
-
-                        # Ajouter une ligne verticale pour le client sélectionné
-                        if client_value is not None:
-                            ax.axvline(
-                                x=client_value,
-                                color="red",
-                                linestyle="--",
-                                label=f"Client sélectionné ({client_value})"
+                        if selected_id:
+                            # Sélection de la caractéristique à analyser
+                            feature_selected = st.selectbox(
+                                "Choisissez une caractéristique à explorer",
+                                all_features
                             )
 
-                        # Ajouter des titres et des labels
-                        ax.set_title(f"Répartition de {feature_selected}", fontsize=14)
-                        ax.set_xlabel(feature_selected, fontsize=12)
-                        ax.set_ylabel("Fréquence", fontsize=12)
-                        ax.legend()
+                            # Appel API pour obtenir les données du client
+                            response = requests.post(f"{API_URL}/predict", json={"SK_ID_CURR": selected_id})
+                            if response.status_code == 200:
+                                data = response.json()
+                                client_value = data.get("client_info", {}).get(feature_selected)
 
-                        # Afficher le graphique
-                        st.pyplot(fig)
+                                # Transformation des données spécifiques si nécessaire
+                                if feature_selected == "DAYS_BIRTH":
+                                    clients_data["AGE"] = abs(clients_data["DAYS_BIRTH"]) // 365
+                                    client_value = abs(client_value) // 365 if client_value else None
+                                    feature_selected = "AGE"  # Renommer pour analyse
+                                elif feature_selected == "DAYS_EMPLOYED":
+                                    clients_data["DAYS_EMPLOYED"] = clients_data["DAYS_EMPLOYED"].apply(
+                                        lambda x: abs(x) // 365 if x < 0 else None
+                                    )
+                                    client_value = abs(client_value) // 365 if client_value and client_value < 0 else "Non employé"
 
-                        st.caption(
-                            f"Ce graphique montre la répartition de la caractéristique '{feature_selected}' "
-                            f"dans l'ensemble des clients. La ligne pointillée rouge représente la valeur pour le client sélectionné."
-                        )
+                                # Vérifier si la caractéristique existe dans les données
+                                if feature_selected in clients_data.columns:
+                                    fig, ax = plt.subplots()
+                                    sns.histplot(
+                                        data=clients_data,
+                                        x=feature_selected,
+                                        kde=True,
+                                        color="#1b9e77",
+                                        ax=ax
+                                    )
+
+                                    # Ajouter une ligne verticale pour le client sélectionné
+                                    if client_value is not None:
+                                        ax.axvline(
+                                            x=client_value,
+                                            color="red",
+                                            linestyle="--",
+                                            label=f"Client sélectionné ({client_value})"
+                                        )
+
+                                    # Ajouter des titres et des labels
+                                    ax.set_title(f"Répartition de {feature_selected}", fontsize=14)
+                                    ax.set_xlabel(feature_selected, fontsize=12)
+                                    ax.set_ylabel("Fréquence", fontsize=12)
+                                    ax.legend()
+
+                                    # Afficher le graphique
+                                    st.pyplot(fig)
+
+                                    st.caption(
+                                        f"Ce graphique montre la répartition de la caractéristique '{feature_selected}' "
+                                        f"dans l'ensemble des clients. La ligne pointillée rouge représente la valeur pour le client sélectionné."
+                                    )
+                                else:
+                                    st.warning(f"La caractéristique {feature_selected} n'est pas disponible dans les données des clients.")
+                            else:
+                                st.error("Impossible de récupérer les informations du client sélectionné.")
                     else:
-                        st.warning(f"La caractéristique {feature_selected} n'est pas disponible dans les données des clients.")
+                        st.warning("Aucun client disponible. Veuillez vérifier les données.")
                 else:
-                    st.error("Impossible de récupérer les informations du client sélectionné.")
-        else:
-            st.warning("Aucun client disponible. Veuillez vérifier les données.")
-    else:
-        st.warning("Les données globales des clients ne sont pas disponibles pour la comparaison.")
-        
+                    st.warning("Les données globales des clients ne sont pas disponibles pour la comparaison.")
+                    
 ##### page analyse bi-variée
 if selected == "Analyse Bi-Variée":
     st.title("Analyse Bi-Variée")
