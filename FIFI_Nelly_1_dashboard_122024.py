@@ -70,6 +70,7 @@ if selected == "Accueil":
 
 
 ##### page prediction
+##### page prediction
 if selected == "Prédictions":
     st.title("Prédictions pour un Client Existant")
 
@@ -90,7 +91,17 @@ if selected == "Prédictions":
                 shap_values = data.get("shap_values", [])
                 feature_names = data.get("feature_names", [])
 
-            
+                # SECTION 0 : Informations descriptives du client
+                st.subheader("Informations descriptives du client")
+
+                # Vérifiez si les informations du client sont disponibles
+                if "client_data" in data:  # Utiliser la clé correcte selon votre API
+                    client_info = data["client_data"]
+                    client_info_df = pd.DataFrame(client_info.items(), columns=["Caractéristique", "Valeur"])
+                    st.table(client_info_df)
+                else:
+                    st.warning("Les informations descriptives du client ne sont pas disponibles.")
+
                 # SECTION 1 : Résultat de la prédiction
                 st.subheader("Résultat de la prédiction")
                 optimal_threshold = 0.08
@@ -125,56 +136,7 @@ if selected == "Prédictions":
                 st.subheader("Tableau interactif des SHAP values")
                 st.dataframe(shap_df.style.set_properties(**{'font-size': '14pt', 'padding': '5px'}), height=400)
                 
-                 # SECTION 4 : Comparaison des caractéristiques locales et globales
-                st.subheader("Comparaison des caractéristiques locales et globales")
-
-                # Vérifier que les données clients sont disponibles
-                st.write("Colonnes attendues par le modèle :", feature_names)
-                st.write("Colonnes disponibles dans les données :", clients_data.columns)
-
-                if not clients_data.empty:
-                    # Initialiser l'explicateur SHAP si nécessaire (remplacez `model` par votre modèle)
-                    # Si explainer est déjà défini, vous pouvez ignorer cette ligne.
-                    import shap
-                    explainer = shap.TreeExplainer(model)
-
-                    # Calcul des SHAP values globales pour l'ensemble des données clients
-                    global_shap_values = []
-                    for _, row in clients_data.iterrows():
-                        data_for_prediction = row[feature_names].values.reshape(1, -1)  # Préparer les données
-                        shap_values_single = explainer.shap_values(data_for_prediction)[1]  # SHAP values pour la classe positive
-                        global_shap_values.append(shap_values_single)
-
-                    # Convertir les SHAP values globales en DataFrame
-                    global_shap_df = pd.DataFrame(global_shap_values, columns=feature_names)
-
-                    # Calculer la moyenne absolue des SHAP values globales
-                    global_importances = global_shap_df.abs().mean().reset_index()
-                    global_importances.columns = ["Feature", "Global Importance"]
-
-                    # Récupérer les 10 principales caractéristiques locales
-                    comparison_df = shap_df_top.merge(global_importances, on="Feature", how="inner")
-
-                    # Créer un graphique pour comparer locales et globales
-                    fig, ax = plt.subplots(figsize=(12, 8))
-                    comparison_df.plot(
-                        x="Feature",
-                        y=["Importance", "Global Importance"],
-                        kind="bar",
-                        ax=ax,
-                        color=["#1f77b4", "#ff7f0e"],
-                        title="Comparaison des caractéristiques locales et globales"
-                    )
-                    ax.set_ylabel("Importance")
-                    ax.set_xlabel("Caractéristiques")
-                    plt.xticks(rotation=45, ha="right")
-
-                    # Afficher le graphique
-                    st.pyplot(fig)
-
-                else:
-                    st.warning("Les données clients sont vides ou non disponibles. Impossible de calculer les caractéristiques globales.")
-
+              
               
 ##### page analyse caracteristique        
 if selected == "Analyse des Caractéristiques":
