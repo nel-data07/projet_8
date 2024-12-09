@@ -1,0 +1,16 @@
+flask
+gunicorn
+lightgbm
+pandas
+numpy
+evidently
+pytest
+requests
+streamlit
+shap
+matplotlib
+scikit-learn
+flask-cors
+joblib
+gdown
+
