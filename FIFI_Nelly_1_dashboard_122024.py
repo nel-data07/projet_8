@@ -6,10 +6,13 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from streamlit_option_menu import option_menu
 import os
+import joblib
 ################################################
     
 ##### URL de l'API
 API_URL = "https://projet7-1.onrender.com"
+
+MODEL_PATH = "best_model_lgb_no.pkl"
 
 # Charger les données clients
 FILE_PATH = "clients_data.csv"
@@ -122,46 +125,55 @@ if selected == "Prédictions":
                 st.subheader("Tableau interactif des SHAP values")
                 st.dataframe(shap_df.style.set_properties(**{'font-size': '14pt', 'padding': '5px'}), height=400)
                 
-                # SECTION 4 : Comparaison des caractéristiques locales et globales
+                 # SECTION 4 : Comparaison des caractéristiques locales et globales
                 st.subheader("Comparaison des caractéristiques locales et globales")
 
-                # Calculer les SHAP values globales à partir de toutes les données (simulé ici)
-                if "clients_data" in globals() and not clients_data.empty:
-                    # Simuler les SHAP values pour l'ensemble des clients (à remplacer par des SHAP globales réelles)
-                    # Extrait les SHAP values globales en supposant un calcul sur toutes les données
-                    global_shap_df = pd.DataFrame({
-                        "Feature": feature_names,
-                        "Global Importance": [abs(val).mean() for val in zip(*shap_values)]
-                    })
+                # Vérifier que les données clients sont disponibles
+                st.write("Colonnes attendues par le modèle :", feature_names)
+                st.write("Colonnes disponibles dans les données :", clients_data.columns)
+
+                if not clients_data.empty:
+                    # Initialiser l'explicateur SHAP si nécessaire (remplacez `model` par votre modèle)
+                    # Si explainer est déjà défini, vous pouvez ignorer cette ligne.
+                    import shap
+                    explainer = shap.TreeExplainer(model)
+
+                    # Calcul des SHAP values globales pour l'ensemble des données clients
+                    global_shap_values = []
+                    for _, row in clients_data.iterrows():
+                        data_for_prediction = row[feature_names].values.reshape(1, -1)  # Préparer les données
+                        shap_values_single = explainer.shap_values(data_for_prediction)[1]  # SHAP values pour la classe positive
+                        global_shap_values.append(shap_values_single)
+
+                    # Convertir les SHAP values globales en DataFrame
+                    global_shap_df = pd.DataFrame(global_shap_values, columns=feature_names)
+
+                    # Calculer la moyenne absolue des SHAP values globales
+                    global_importances = global_shap_df.abs().mean().reset_index()
+                    global_importances.columns = ["Feature", "Global Importance"]
+
+                    # Récupérer les 10 principales caractéristiques locales
+                    comparison_df = shap_df_top.merge(global_importances, on="Feature", how="inner")
+
+                    # Créer un graphique pour comparer locales et globales
+                    fig, ax = plt.subplots(figsize=(12, 8))
+                    comparison_df.plot(
+                        x="Feature",
+                        y=["Importance", "Global Importance"],
+                        kind="bar",
+                        ax=ax,
+                        color=["#1f77b4", "#ff7f0e"],
+                        title="Comparaison des caractéristiques locales et globales"
+                    )
+                    ax.set_ylabel("Importance")
+                    ax.set_xlabel("Caractéristiques")
+                    plt.xticks(rotation=45, ha="right")
+
+                    # Afficher le graphique
+                    st.pyplot(fig)
+
                 else:
-                    st.warning("Les données globales pour les SHAP values ne sont pas disponibles. Les valeurs globales sont simulées.")
-                    global_shap_df = pd.DataFrame({
-                        "Feature": feature_names,
-                        "Global Importance": [abs(val) for val in shap_values]
-                    })
-
-                # Fusionner les données locales et globales pour comparaison
-                comparison_df = shap_df_top.merge(global_shap_df, on="Feature", how="inner")
-
-                # Créer un graphique pour la comparaison
-                fig, ax = plt.subplots(figsize=(12, 8))
-
-                # Création d'un barplot pour comparer les importances locales et globales
-                comparison_df.plot(
-                    x="Feature",
-                    y=["Importance", "Global Importance"],
-                    kind="bar",
-                    ax=ax,
-                    color=["#1f77b4", "#ff7f0e"],
-                    title="Comparaison des caractéristiques locales et globales"
-                )
-
-                ax.set_ylabel("Importance")
-                ax.set_xlabel("Caractéristiques")
-                plt.xticks(rotation=45, ha="right")
-
-                # Afficher le graphique dans Streamlit
-                st.pyplot(fig)
+                    st.warning("Les données clients sont vides ou non disponibles. Impossible de calculer les caractéristiques globales.")
 
               
 ##### page analyse caracteristique        
