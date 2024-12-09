@@ -94,8 +94,20 @@ if selected == "Prédictions":
                 st.subheader("Informations descriptives du client")
 
                 if client_info:  # Vérifiez si les informations sont disponibles
-                    client_info_df = pd.DataFrame(client_info.items(), columns=["Caractéristique", "Valeur"])
-                    st.table(client_info_df)
+                    # Extraire uniquement les caractéristiques pertinentes
+                    filtered_info = {
+                        "Sexe": "Femme" if client_info.get("CODE_GENDER_F", 0) == 1 else "Homme",
+                        "Âge (années)": abs(client_info.get("DAYS_BIRTH", 0)) // 365,
+                        "Nombre d'enfants": client_info.get("CNT_CHILDREN", 0),
+                        "Revenu annuel total (€)": f"{client_info.get('AMT_INCOME_TOTAL', 0):,.2f}",
+                        "Montant du crédit (€)": f"{client_info.get('AMT_CREDIT', 0):,.2f}",
+                        "Durée d'emploi (années)": abs(client_info.get("DAYS_EMPLOYED", 0)) // 365 
+                                                    if client_info.get("DAYS_EMPLOYED", 0) < 0 else "Non employé"
+                    }
+
+                    # Convertir en DataFrame pour affichage
+                    filtered_info_df = pd.DataFrame(filtered_info.items(), columns=["Caractéristique", "Valeur"])
+                    st.table(filtered_info_df)
                 else:
                     st.warning("Les informations descriptives du client ne sont pas disponibles.")
 
