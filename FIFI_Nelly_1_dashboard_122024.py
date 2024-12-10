@@ -369,5 +369,5 @@ if selected == "Modification des informations":
 
             st.pyplot(fig)
 
-        else:
-            st.error("Erreur lors de la prédiction avec les valeurs modifiées.")
+            else:
+                st.error("Erreur lors de la prédiction avec les valeurs modifiées.")
