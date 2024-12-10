@@ -329,14 +329,16 @@ if selected == "Modification des informations":
     if client_ids:
         selected_id = st.selectbox("Choisissez un ID client (SK_ID_CURR)", client_ids)
         
-        new_income = st.number_input("Revenus du client", value=0)
+        new_income = st.number_input("Revenus annuel total du client ", value=0)
         new_loan_amount = st.number_input("Montant du prêt", value=0)
+        new_cnt_children = st.number_input("nombre d'enfant",value=0)
 
         if st.button("Mettre à jour et prédire"):
             payload = {
                 "SK_ID_CURR": selected_id,
-                "income": new_income,
-                "loan_amount": new_loan_amount
+                "AMT_INCOME_TOTAL": new_income,
+                "loan_amount": new_loan_amount,
+                "CNT_CHILDREN" : new_cnt_children
             }
             response = requests.post(f"{API_URL}/predict", json=payload)
             if response.status_code == 200:
