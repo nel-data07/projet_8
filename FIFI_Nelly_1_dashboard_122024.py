@@ -27,7 +27,7 @@ with st.sidebar:
     selected = option_menu(
         menu_title="Menu",
         options=["Accueil", "Prédictions", "Analyse des Caractéristiques", "Analyse Bi-Variée", "Modification des informations","Prédiction nouveau client"],
-        icons=["house", "graph-up", "list-task", "bi-graph-up-arrow", "pencil-square","fa fa-user-plus"],
+        icons=["house", "graph-up", "list-task", "bi-graph-up-arrow", "pencil-square","user-circle"],
         menu_icon="menu-button",
         default_index=0
     )
@@ -376,14 +376,13 @@ if selected == "Modification des informations":
 if selected == "Prédiction nouveau client":
     st.title("Prédiction nouveau client")
 
-    # Charger les données globales pour récupérer l'ID maximum
-    if not clients_data.empty:
-        max_id = clients_data["SK_ID_CURR"].max()
+    # Récupérer le prochain ID client via l'API
+    response = requests.get(f"{API_URL}/get_next_client_id")
+    if response.status_code == 200:
+        new_id = response.json().get("next_id", 100001)  # Valeur par défaut si aucune réponse
     else:
-        max_id = 100000  # Valeur par défaut si le fichier est vide
+        new_id = 100001
 
-    # Générer automatiquement un nouvel ID
-    new_id = max_id + 1
     st.write(f"Nouvel ID client : {new_id}")
 
     # Saisie des informations principales
@@ -395,14 +394,13 @@ if selected == "Prédiction nouveau client":
 
     # Envoyer la requête pour obtenir le score et la probabilité
     if st.button("Calculer le Score et la Probabilité"):
-        # Préparer les données pour les colonnes nécessaires
         payload = {
             "SK_ID_CURR": new_id,
             "AMT_INCOME_TOTAL": new_income,
             "AMT_CREDIT": new_credit_amount,
             "CNT_CHILDREN": new_children,
             "DAYS_EMPLOYED": new_days_employed,
-            "DAYS_BIRTH": -new_age * 365  # Transformer l'âge en jours
+            "DAYS_BIRTH": -new_age * 365
         }
 
         # Appeler l'API pour calculer le score
@@ -414,13 +412,11 @@ if selected == "Prédiction nouveau client":
             shap_values = data.get("shap_values", [])
             feature_names = data.get("feature_names", [])
 
-            # Afficher le résultat
             if prediction > 0.08:
                 st.error(f"Crédit REFUSÉ (Probabilité de défaut : {prediction:.2f})")
             else:
                 st.success(f"Crédit ACCEPTÉ (Probabilité de défaut : {prediction:.2f})")
 
-            # Graphique des caractéristiques influentes
             st.subheader("Top 10 des caractéristiques influentes")
             shap_df = pd.DataFrame({'Feature': feature_names, 'Importance': shap_values})
             shap_df = shap_df.sort_values(by='Importance', ascending=False).head(10)
@@ -435,7 +431,5 @@ if selected == "Prédiction nouveau client":
                 ax.text(imp, i, f'{imp:.2f}', ha='left', va='center', color='black')
 
             st.pyplot(fig)
-
         else:
             st.error("Erreur lors du calcul de la probabilité pour le nouveau client.")
-
