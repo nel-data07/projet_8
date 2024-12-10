@@ -319,71 +319,17 @@ if selected == "Analyse Bi-Variée":
     else:
         st.warning("Les données des clients ne sont pas disponibles.")
 
-if selected == "Modification des informations":
-    st.title("Modification des informations")
-
-    response = requests.get(f"{API_URL}/get_client_ids")
-    client_ids = response.json().get("client_ids", []) if response.status_code == 200 else []
-    
-    if client_ids:
-        selected_id = st.selectbox("Choisissez un ID client (SK_ID_CURR)", client_ids)
-        
-        new_income = st.number_input("Revenus annuel total du client ", value=0)
-        new_loan_amount = st.number_input("Montant du prêt", value=0)
-        new_cnt_children = st.number_input("Nombre d'enfant", value=0)
-
-    if st.button("Mettre à jour et prédire"):
-        payload = {
-            "SK_ID_CURR": selected_id,
-            "AMT_INCOME_TOTAL": new_income,
-            "CNT_CHILDREN": new_cnt_children,
-            "AMT_CREDIT": new_loan_amount
-        }
-        response = requests.post(f"{API_URL}/predict_with_custom_values", json=payload)
-        if response.status_code == 200:
-            data = response.json()
-            prediction = data.get("probability_of_default", None)
-            shap_values = data.get("shap_values", [])
-            feature_names = data.get("feature_names", [])
-
-            # Afficher le résultat de la prédiction
-            if prediction > 0.08:
-                st.error(f"Crédit REFUSÉ (Probabilité de défaut : {prediction:.2f})")
-            else:
-                st.success(f"Crédit ACCEPTÉ (Probabilité de défaut : {prediction:.2f})")
-
-            # Graphique des 10 caractéristiques les plus influentes
-            st.subheader("Top 10 des caractéristiques influentes")
-            shap_df = pd.DataFrame({'Feature': feature_names, 'Importance': shap_values})
-            shap_df = shap_df.sort_values(by='Importance', ascending=False).head(10)
-
-            # Création du graphique
-            fig, ax = plt.subplots(figsize=(8, 6))  # Taille ajustée
-            sns.barplot(x='Importance', y='Feature', data=shap_df, palette="viridis", ax=ax)
-            ax.set_title('Top 10 des caractéristiques influentes (valeurs SHAP)', fontsize=14)
-            ax.set_xlabel("Importance (SHAP)", fontsize=12)
-            ax.set_ylabel("Caractéristiques", fontsize=12)
-
-            # Ajouter des annotations pour les valeurs
-            for i, (imp, feature) in enumerate(zip(shap_df['Importance'], shap_df['Feature'])):
-                ax.text(imp, i, f'{imp:.2f}', ha='left', va='center', color='black')
-
-            st.pyplot(fig)
-
-        else:
-            st.error("Erreur lors de la prédiction avec les valeurs modifiées.")
-
 if selected == "Prédiction nouveau client":
     st.title("Prédiction nouveau client")
 
-    # Récupérer le nouvel ID client depuis l'API
+    # Récupérer le prochain ID depuis l'API
     response = requests.get(f"{API_URL}/get_next_client_id")
+
     if response.status_code == 200:
-        new_id = response.json().get("next_id", 100001)  # ID par défaut si absent
+        new_id = response.json().get("next_id")
         st.write(f"Nouvel ID client : {new_id}")
     else:
         st.error("Erreur lors de la récupération du prochain ID client.")
-        new_id = 100001  # ID fallback
 
     # Saisie des informations principales
     new_gender = st.selectbox("Sexe", options=["Homme", "Femme"], index=0)
