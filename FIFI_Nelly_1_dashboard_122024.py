@@ -350,3 +350,24 @@ if selected == "Modification des informations":
                 st.success(f"Crédit ACCEPTÉ (Probabilité de défaut : {prediction:.2f})")
         else:
             st.error("Erreur lors de la prédiction avec les valeurs modifiées.")
+
+            # Graphique des 10 caractéristiques les plus influentes
+            st.subheader("Top 10 des caractéristiques influentes")
+            shap_df = pd.DataFrame({'Feature': feature_names, 'Importance': shap_values})
+            shap_df = shap_df.sort_values(by='Importance', ascending=False).head(10)
+
+            # Création du graphique
+            fig, ax = plt.subplots(figsize=(8, 6))  # Taille ajustée
+            sns.barplot(x='Importance', y='Feature', data=shap_df, palette="viridis", ax=ax)
+            ax.set_title('Top 10 des caractéristiques influentes (valeurs SHAP)', fontsize=14)
+            ax.set_xlabel("Importance (SHAP)", fontsize=12)
+            ax.set_ylabel("Caractéristiques", fontsize=12)
+
+            # Ajouter des annotations pour les valeurs
+            for i, (imp, feature) in enumerate(zip(shap_df['Importance'], shap_df['Feature'])):
+                ax.text(imp, i, f'{imp:.2f}', ha='left', va='center', color='black')
+
+            st.pyplot(fig)
+
+        else:
+            st.error("Erreur lors de la prédiction avec les valeurs modifiées.")
