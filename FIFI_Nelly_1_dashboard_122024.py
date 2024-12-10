@@ -27,7 +27,7 @@ with st.sidebar:
     selected = option_menu(
         menu_title="Menu",
         options=["Accueil", "Prédictions", "Analyse des Caractéristiques", "Analyse Bi-Variée", "Modification des informations","Prédiction nouveau client"],
-        icons=["house", "graph-up", "list-task", "bi-graph-up-arrow", "pencil-square","id-badge"],
+        icons=["house", "graph-up", "list-task", "bi-graph-up-arrow", "pencil-square","clipboard-user"],
         menu_icon="menu-button",
         default_index=0
     )
