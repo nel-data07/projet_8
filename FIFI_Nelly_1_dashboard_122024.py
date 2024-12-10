@@ -318,6 +318,58 @@ if selected == "Analyse Bi-Variée":
                         )
     else:
         st.warning("Les données des clients ne sont pas disponibles.")
+##### Page "Modification des informations"
+if selected == "Modification des informations":
+    st.title("Modification des informations")
+
+    # Récupérer les IDs clients existants via l'API
+    response = requests.get(f"{API_URL}/get_client_ids")
+    client_ids = response.json().get("client_ids", []) if response.status_code == 200 else []
+
+    if client_ids:
+        # Sélection de l'ID client
+        selected_id = st.selectbox("Choisissez un ID client (SK_ID_CURR)", client_ids)
+
+        # Saisie des informations modifiables
+        new_income = st.number_input("Revenus annuel total du client (€)", value=0.0, step=1000.0, min_value=0.0)
+        new_credit_amount = st.number_input("Montant du crédit (€)", value=0.0, step=1000.0, min_value=0.0)
+        new_children = st.number_input("Nombre d'enfants", value=0, step=1, min_value=0)
+        new_goods_price = st.number_input("Montant des biens (€)", value=0.0, step=1000.0, min_value=0.0)
+
+        # Bouton pour mettre à jour et recalculer
+        if st.button("Mettre à jour et prédire"):
+            # Préparer les données pour la requête
+            payload = {
+                "SK_ID_CURR": selected_id,
+                "AMT_INCOME_TOTAL": new_income,
+                "AMT_CREDIT": new_credit_amount,
+                "CNT_CHILDREN": new_children,
+                "AMT_GOODS_PRICE": new_goods_price
+            }
+
+            # Envoyer les données modifiées à l'API
+            response = requests.post(f"{API_URL}/predict_with_custom_values", json=payload)
+
+            if response.status_code == 200:
+                data = response.json()
+                prediction = data.get("probability_of_default", None)
+
+                # Définir le seuil optimal
+                optimal_threshold = 0.08
+                if prediction > optimal_threshold:
+                    st.error(f"Crédit REFUSÉ (Probabilité de défaut : {prediction:.2f})")
+                else:
+                    st.success(f"Crédit ACCEPTÉ (Probabilité de défaut : {prediction:.2f})")
+
+                # Afficher le seuil utilisé
+                st.markdown(f"**Seuil utilisé pour la décision : {optimal_threshold:.2f}**")
+
+            else:
+                st.error("Erreur lors de la mise à jour ou de la prédiction.")
+    else:
+        st.warning("Aucun client disponible. Veuillez vérifier les données ou l'API.")
+
+
 ##### Page "Prédiction nouveau client"
 if selected == "Prédiction nouveau client":
     st.title("Prédiction nouveau client")
