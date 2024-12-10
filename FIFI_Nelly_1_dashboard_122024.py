@@ -319,32 +319,20 @@ if selected == "Analyse Bi-Variée":
     else:
         st.warning("Les données des clients ne sont pas disponibles.")
 
-##### page modification des informations
-if selected == "Modification des informations":
-    st.title("Modification des Informations Client")
-
-    response = requests.get(f"{API_URL}/get_client_ids")
-    client_ids = response.json().get("client_ids", []) if response.status_code == 200 else []
-    
-    if client_ids:
-        selected_id = st.selectbox("Choisissez un ID client (SK_ID_CURR)", client_ids)
-        
-        new_income = st.number_input("Revenus annuel total du client ", value=0)
-        new_loan_amount = st.number_input("Montant du prêt", value=0)
-        new_cnt_children = st.number_input("nombre d'enfant",value=0)
-
-        if st.button("Mettre à jour et prédire"):
-            payload = {
-                "SK_ID_CURR": selected_id,
-                "AMT_INCOME_TOTAL": new_income,
-                "loan_amount": new_loan_amount,
-                "CNT_CHILDREN" : new_cnt_children
-            }
-            response = requests.post(f"{API_URL}/predict", json=payload)
-            if response.status_code == 200:
-                data = response.json()
-                prediction = data.get("probability_of_default", None)
-                if prediction > 0.08:
-                    st.error(f"Crédit REFUSÉ (Probabilité de défaut : {prediction:.2f})")
-                else:
-                    st.success(f"Crédit ACCEPTÉ (Probabilité de défaut : {prediction:.2f})")
+if st.button("Mettre à jour et prédire"):
+    payload = {
+        "SK_ID_CURR": selected_id,
+        "AMT_INCOME_TOTAL": new_income,
+        "CNT_CHILDREN": new_cnt_children,
+        "AMT_CREDIT": new_loan_amount
+    }
+    response = requests.post(f"{API_URL}/predict_with_custom_values", json=payload)
+    if response.status_code == 200:
+        data = response.json()
+        prediction = data.get("probability_of_default", None)
+        if prediction > 0.08:
+            st.error(f"Crédit REFUSÉ (Probabilité de défaut : {prediction:.2f})")
+        else:
+            st.success(f"Crédit ACCEPTÉ (Probabilité de défaut : {prediction:.2f})")
+    else:
+        st.error("Erreur lors de la prédiction avec les valeurs modifiées.")
