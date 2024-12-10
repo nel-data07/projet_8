@@ -379,7 +379,7 @@ if selected == "Prédiction nouveau client":
     # Récupérer le nouvel ID client depuis l'API
     response = requests.get(f"{API_URL}/get_next_client_id")
     if response.status_code == 200:
-        new_id = response.json().get("next_client_id", 100001)  # ID par défaut si absent
+        new_id = response.json().get("next_id", 100001)  # ID par défaut si absent
         st.write(f"Nouvel ID client : {new_id}")
     else:
         st.error("Erreur lors de la récupération du prochain ID client.")
