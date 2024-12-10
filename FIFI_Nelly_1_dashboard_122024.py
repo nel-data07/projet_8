@@ -376,31 +376,39 @@ if selected == "Modification des informations":
 if selected == "Prédiction nouveau client":
     st.title("Prédiction nouveau client")
 
-    # Récupérer le prochain ID client via l'API
+    # Récupérer le nouvel ID client depuis l'API
     response = requests.get(f"{API_URL}/get_next_client_id")
     if response.status_code == 200:
-        new_id = response.json().get("next_id", 100001)  # Valeur par défaut si aucune réponse
+        new_id = response.json().get("next_client_id", 100001)  # ID par défaut si absent
+        st.write(f"Nouvel ID client : {new_id}")
     else:
-        new_id = 100001
-
-    st.write(f"Nouvel ID client : {new_id}")
+        st.error("Erreur lors de la récupération du prochain ID client.")
+        new_id = 100001  # ID fallback
 
     # Saisie des informations principales
-    new_income = st.number_input("Revenu annuel total (€)", value=0)
-    new_credit_amount = st.number_input("Montant du crédit (€)", value=0)
-    new_children = st.number_input("Nombre d'enfants", value=0, step=1, min_value=0)
-    new_days_employed = st.number_input("Durée d'emploi (jours, négatif pour actif)", value=-365, step=1)
+    new_gender = st.selectbox("Sexe", options=["Homme", "Femme"], index=0)
     new_age = st.number_input("Âge (années)", value=30, step=1)
+    new_children = st.number_input("Nombre d'enfants", value=0, step=1, min_value=0)
+    new_income = st.number_input("Revenu annuel total (€)", value=0.0, step=1000.0, min_value=0.0)
+    new_goods_price = st.number_input("Montant des biens (€)", value=0.0, step=1000.0, min_value=0.0)
+    new_credit_amount = st.number_input("Montant du crédit (€)", value=0.0, step=1000.0, min_value=0.0)
+
+    # Transformation du sexe pour correspondre au modèle
+    code_gender_f = 1 if new_gender == "Femme" else 0
+    code_gender_m = 1 if new_gender == "Homme" else 0
 
     # Envoyer la requête pour obtenir le score et la probabilité
     if st.button("Calculer le Score et la Probabilité"):
+        # Préparer les données pour les colonnes nécessaires
         payload = {
             "SK_ID_CURR": new_id,
-            "AMT_INCOME_TOTAL": new_income,
-            "AMT_CREDIT": new_credit_amount,
+            "CODE_GENDER_F": code_gender_f,
+            "CODE_GENDER_M": code_gender_m,
+            "DAYS_BIRTH": -new_age * 365,  # Transformer l'âge en jours
             "CNT_CHILDREN": new_children,
-            "DAYS_EMPLOYED": new_days_employed,
-            "DAYS_BIRTH": -new_age * 365
+            "AMT_INCOME_TOTAL": new_income,
+            "AMT_GOODS_PRICE": new_goods_price,
+            "AMT_CREDIT": new_credit_amount
         }
 
         # Appeler l'API pour calculer le score
@@ -412,11 +420,13 @@ if selected == "Prédiction nouveau client":
             shap_values = data.get("shap_values", [])
             feature_names = data.get("feature_names", [])
 
+            # Afficher le résultat
             if prediction > 0.08:
                 st.error(f"Crédit REFUSÉ (Probabilité de défaut : {prediction:.2f})")
             else:
                 st.success(f"Crédit ACCEPTÉ (Probabilité de défaut : {prediction:.2f})")
 
+            # Graphique des caractéristiques influentes
             st.subheader("Top 10 des caractéristiques influentes")
             shap_df = pd.DataFrame({'Feature': feature_names, 'Importance': shap_values})
             shap_df = shap_df.sort_values(by='Importance', ascending=False).head(10)
@@ -431,5 +441,6 @@ if selected == "Prédiction nouveau client":
                 ax.text(imp, i, f'{imp:.2f}', ha='left', va='center', color='black')
 
             st.pyplot(fig)
+
         else:
             st.error("Erreur lors du calcul de la probabilité pour le nouveau client.")
