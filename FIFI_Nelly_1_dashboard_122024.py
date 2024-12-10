@@ -387,7 +387,6 @@ if selected == "Modification des informations":
                 st.error("Erreur lors de la mise à jour ou de la prédiction.")
     else:
         st.warning("Aucun client disponible. Veuillez vérifier les données ou l'API.")
-      st.warning("Aucun client disponible. Veuillez vérifier les données ou l'API.")
 
 
 ############################################################################################### Page "Prédiction nouveau client"
