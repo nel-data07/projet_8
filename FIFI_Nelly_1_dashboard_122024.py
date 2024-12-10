@@ -318,7 +318,7 @@ if selected == "Analyse Bi-Variée":
                         )
     else:
         st.warning("Les données des clients ne sont pas disponibles.")
-
+##### Page "Prédiction nouveau client"
 if selected == "Prédiction nouveau client":
     st.title("Prédiction nouveau client")
 
@@ -335,7 +335,7 @@ if selected == "Prédiction nouveau client":
     # Utiliser l'ID stocké dans session_state
     new_id = st.session_state.new_client_id
     if new_id:
-        st.write(f"Nouvel ID client : {new_id}")
+        st.write(f"**Nouvel ID client : {new_id}**")
 
         # Saisie des informations principales
         new_gender = st.selectbox("Sexe", options=["Homme", "Femme"], index=0)
@@ -369,8 +369,16 @@ if selected == "Prédiction nouveau client":
             if response.status_code == 200:
                 data = response.json()
                 prediction = data.get("probability_of_default", None)
-                shap_values = data.get("shap_values", [])
-                feature_names = data.get("feature_names", [])
+
+                # Définir le seuil optimal
+                optimal_threshold = 0.08
+                if prediction > optimal_threshold:
+                    st.error(f"Crédit REFUSÉ (Probabilité de défaut : {prediction:.2f})")
+                else:
+                    st.success(f"Crédit ACCEPTÉ (Probabilité de défaut : {prediction:.2f})")
+
+                # Afficher le seuil utilisé
+                st.markdown(f"**Seuil utilisé pour la décision : {optimal_threshold:.2f}**")
 
             else:
                 st.error("Erreur lors du calcul de la probabilité pour le nouveau client.")
