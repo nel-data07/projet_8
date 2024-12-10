@@ -330,8 +330,7 @@ if selected == "Modification des informations":
         
         new_income = st.number_input("Revenus annuel total du client ", value=0)
         new_loan_amount = st.number_input("Montant du prêt", value=0)
-        new_cnt_children = st.number_input("nombre d'enfant",value=0)
-
+        new_cnt_children = st.number_input("Nombre d'enfant", value=0)
 
     if st.button("Mettre à jour et prédire"):
         payload = {
@@ -344,12 +343,14 @@ if selected == "Modification des informations":
         if response.status_code == 200:
             data = response.json()
             prediction = data.get("probability_of_default", None)
+            shap_values = data.get("shap_values", [])
+            feature_names = data.get("feature_names", [])
+
+            # Afficher le résultat de la prédiction
             if prediction > 0.08:
                 st.error(f"Crédit REFUSÉ (Probabilité de défaut : {prediction:.2f})")
             else:
                 st.success(f"Crédit ACCEPTÉ (Probabilité de défaut : {prediction:.2f})")
-        else:
-            st.error("Erreur lors de la prédiction avec les valeurs modifiées.")
 
             # Graphique des 10 caractéristiques les plus influentes
             st.subheader("Top 10 des caractéristiques influentes")
@@ -369,5 +370,5 @@ if selected == "Modification des informations":
 
             st.pyplot(fig)
 
-            else:
-                st.error("Erreur lors de la prédiction avec les valeurs modifiées.")
+        else:
+            st.error("Erreur lors de la prédiction avec les valeurs modifiées.")
