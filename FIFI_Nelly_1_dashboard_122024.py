@@ -330,7 +330,10 @@ if selected == "Prédiction nouveau client":
         st.write(f"Nouvel ID client : {new_id}")
     else:
         st.error("Erreur lors de la récupération du prochain ID client.")
+        new_id = None  # Fallback si aucun ID n'est disponible
 
+    # Vérifier que l'ID est disponible avant de continuer
+    if new_id:
     # Saisie des informations principales
     new_gender = st.selectbox("Sexe", options=["Homme", "Femme"], index=0)
     new_age = st.number_input("Âge (années)", value=30, step=1)
