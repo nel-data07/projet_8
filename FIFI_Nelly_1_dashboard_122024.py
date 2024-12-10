@@ -322,18 +322,21 @@ if selected == "Analyse Bi-Variée":
 if selected == "Prédiction nouveau client":
     st.title("Prédiction nouveau client")
 
-    # Récupérer le prochain ID depuis l'API
-    response = requests.get(f"{API_URL}/get_next_client_id")
+    # Initialiser le session_state pour stocker l'ID
+    if "new_client_id" not in st.session_state:
+        # Récupérer le prochain ID depuis l'API uniquement au premier chargement
+        response = requests.get(f"{API_URL}/get_next_client_id")
+        if response.status_code == 200:
+            st.session_state.new_client_id = response.json().get("next_id")
+        else:
+            st.error("Erreur lors de la récupération du prochain ID client.")
+            st.session_state.new_client_id = None
 
-    if response.status_code == 200:
-        new_id = response.json().get("next_id")
-        st.write(f"Nouvel ID client : {new_id}")
-    else:
-        st.error("Erreur lors de la récupération du prochain ID client.")
-        new_id = None  # Fallback si aucun ID n'est disponible
-
-    # Vérifier que l'ID est disponible avant de continuer
+    # Utiliser l'ID stocké dans session_state
+    new_id = st.session_state.new_client_id
     if new_id:
+        st.write(f"Nouvel ID client : {new_id}")
+
         # Saisie des informations principales
         new_gender = st.selectbox("Sexe", options=["Homme", "Femme"], index=0)
         new_age = st.number_input("Âge (années)", value=30, step=1)
@@ -393,3 +396,5 @@ if selected == "Prédiction nouveau client":
 
             else:
                 st.error("Erreur lors du calcul de la probabilité pour le nouveau client.")
+    else:
+        st.warning("Impossible de générer un nouvel ID client. Vérifiez l'API.")
