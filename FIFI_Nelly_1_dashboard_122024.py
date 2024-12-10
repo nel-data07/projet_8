@@ -66,7 +66,7 @@ if selected == "Accueil":
         unsafe_allow_html=True,
     )
 
-##### page prediction
+############################################################################################################################# page prediction
 if selected == "Prédictions":
     st.title("Prédictions pour un Client Existant")
 
@@ -178,7 +178,7 @@ if selected == "Prédictions":
                 else:
                     st.warning("Impossible de récupérer les importances globales. Vérifiez l'API.")
               
-##### page analyse caracteristique        
+################################################################################################################### page analyse caracteristique        
 if selected == "Analyse des Caractéristiques":
     st.title("Analyse des Caractéristiques Clients")
 
@@ -263,7 +263,7 @@ if selected == "Analyse des Caractéristiques":
     else:
         st.warning("Les données globales des clients ne sont pas disponibles pour la comparaison.")
               
-##### page analyse bi-variée
+############################################################################################################################# page analyse bi-variée
 if selected == "Analyse Bi-Variée":
     st.title("Analyse Bi-Variée")
 
@@ -318,7 +318,7 @@ if selected == "Analyse Bi-Variée":
                         )
     else:
         st.warning("Les données des clients ne sont pas disponibles.")
-##### Page "Modification des informations"
+######################################################################################################### Page "Modification des informations"
 if selected == "Modification des informations":
     st.title("Modification des informations")
 
@@ -353,6 +353,8 @@ if selected == "Modification des informations":
             if response.status_code == 200:
                 data = response.json()
                 prediction = data.get("probability_of_default", None)
+                shap_values = data.get("shap_values", [])
+                feature_names = data.get("feature_names", [])
 
                 # Définir le seuil optimal
                 optimal_threshold = 0.08
@@ -364,13 +366,31 @@ if selected == "Modification des informations":
                 # Afficher le seuil utilisé
                 st.markdown(f"**Seuil utilisé pour la décision : {optimal_threshold:.2f}**")
 
+                # Graphique des caractéristiques influentes
+                st.subheader("Top 10 des caractéristiques influentes")
+                shap_df = pd.DataFrame({'Feature': feature_names, 'Importance': shap_values})
+                shap_df = shap_df.sort_values(by='Importance', ascending=False).head(10)
+
+                fig, ax = plt.subplots(figsize=(8, 6))
+                sns.barplot(x='Importance', y='Feature', data=shap_df, palette="viridis", ax=ax)
+                ax.set_title('Top 10 des caractéristiques influentes (valeurs SHAP)', fontsize=14)
+                ax.set_xlabel("Importance (SHAP)", fontsize=12)
+                ax.set_ylabel("Caractéristiques", fontsize=12)
+
+                # Ajouter des annotations
+                for i, (imp, feature) in enumerate(zip(shap_df['Importance'], shap_df['Feature'])):
+                    ax.text(imp, i, f'{imp:.2f}', ha='left', va='center', color='black')
+
+                st.pyplot(fig)
+
             else:
                 st.error("Erreur lors de la mise à jour ou de la prédiction.")
     else:
         st.warning("Aucun client disponible. Veuillez vérifier les données ou l'API.")
+      st.warning("Aucun client disponible. Veuillez vérifier les données ou l'API.")
 
 
-##### Page "Prédiction nouveau client"
+############################################################################################### Page "Prédiction nouveau client"
 if selected == "Prédiction nouveau client":
     st.title("Prédiction nouveau client")
 
