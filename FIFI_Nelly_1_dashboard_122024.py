@@ -298,7 +298,7 @@ if selected == "Analyse Bi-Variée":
                         st.warning(f"Aucune donnée disponible après suppression des NaN pour les colonnes '{feature_x}' et '{feature_y}'.")
                     else:
                         # Création du graphique
-                        fig, ax = plt.subplots(figsize=(6, 4))  # Ajuster la taille du graphique
+                        fig, ax = plt.subplots(figsize=(4, 3))  # Ajuster la taille du graphique
                         sns.scatterplot(
                             data=filtered_data,
                             x=feature_x,
@@ -308,8 +308,8 @@ if selected == "Analyse Bi-Variée":
                             ax=ax
                         )
                         ax.set_title(f'Analyse bi-variée: {feature_x} vs {feature_y}', fontsize=14)
-                        ax.set_xlabel(feature_x, fontsize=12)
-                        ax.set_ylabel(feature_y, fontsize=12)
+                        ax.set_xlabel(feature_x, fontsize=10)
+                        ax.set_ylabel(feature_y, fontsize=10)
                         
                         st.pyplot(fig)
                         st.caption(
