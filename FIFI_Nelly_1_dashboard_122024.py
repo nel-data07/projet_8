@@ -319,20 +319,22 @@ if selected == "Analyse Bi-Variée":
     else:
         st.warning("Les données des clients ne sont pas disponibles.")
 
-if st.button("Mettre à jour et prédire"):
-    payload = {
-        "SK_ID_CURR": selected_id,
-        "AMT_INCOME_TOTAL": new_income,
-        "CNT_CHILDREN": new_cnt_children,
-        "AMT_CREDIT": new_loan_amount
-    }
-    response = requests.post(f"{API_URL}/predict_with_custom_values", json=payload)
-    if response.status_code == 200:
-        data = response.json()
-        prediction = data.get("probability_of_default", None)
-        if prediction > 0.08:
-            st.error(f"Crédit REFUSÉ (Probabilité de défaut : {prediction:.2f})")
+if selected == "Modification des informations":
+    st.title("Modification des informations")
+    if st.button("Mettre à jour et prédire"):
+        payload = {
+            "SK_ID_CURR": selected_id,
+            "AMT_INCOME_TOTAL": new_income,
+            "CNT_CHILDREN": new_cnt_children,
+            "AMT_CREDIT": new_loan_amount
+        }
+        response = requests.post(f"{API_URL}/predict_with_custom_values", json=payload)
+        if response.status_code == 200:
+            data = response.json()
+            prediction = data.get("probability_of_default", None)
+            if prediction > 0.08:
+                st.error(f"Crédit REFUSÉ (Probabilité de défaut : {prediction:.2f})")
+            else:
+                st.success(f"Crédit ACCEPTÉ (Probabilité de défaut : {prediction:.2f})")
         else:
-            st.success(f"Crédit ACCEPTÉ (Probabilité de défaut : {prediction:.2f})")
-    else:
-        st.error("Erreur lors de la prédiction avec les valeurs modifiées.")
+            st.error("Erreur lors de la prédiction avec les valeurs modifiées.")
