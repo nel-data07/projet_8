@@ -307,9 +307,9 @@ if selected == "Analyse Bi-Variée":
                             palette='viridis',
                             ax=ax
                         )
-                        ax.set_title(f'Analyse bi-variée: {feature_x} vs {feature_y}', fontsize=10)
-                        ax.set_xlabel(feature_x, fontsize=8)
-                        ax.set_ylabel(feature_y, fontsize=8)
+                        ax.set_title(f'Analyse bi-variée: {feature_x} vs {feature_y}', fontsize=6)
+                        ax.set_xlabel(feature_x, fontsize=6)
+                        ax.set_ylabel(feature_y, fontsize=6)
                         
                         st.pyplot(fig)
                         st.caption(
