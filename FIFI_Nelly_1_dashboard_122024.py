@@ -42,7 +42,7 @@ if selected == "Accueil":
     )
 
     # Intégration de l'image
-    st.image("pret_a_depense.png", use_column_width=True, caption="Prêt à dépenser - Analyse de risque de crédit")
+    st.image("pret_a_depense.png", use_container_width=True, caption="Prêt à dépenser - Analyse de risque de crédit")
 
     # Description sous l'image avec texte plus grand
     st.markdown(
