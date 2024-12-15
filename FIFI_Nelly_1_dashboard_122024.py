@@ -7,6 +7,7 @@ import seaborn as sns
 from streamlit_option_menu import option_menu
 import os
 import joblib
+import plotly.graph_objects as go
 ################################################
     
 ##### URL de l'API
@@ -109,16 +110,38 @@ if selected == "Prédictions":
                 else:
                     st.warning("Les informations descriptives du client ne sont pas disponibles.")
 
-                # SECTION 1 : Résultat de la prédiction
-                st.subheader("Résultat de la prédiction")
-                optimal_threshold = 0.08
-                if prediction > optimal_threshold:
-                    st.error(f"Crédit REFUSÉ (Probabilité de défaut : {prediction:.2f})")
-                else:
-                    st.success(f"Crédit ACCEPTÉ (Probabilité de défaut : {prediction:.2f})")
+             # SECTION 1 : Résultat de la prédiction avec jauge
+                            st.subheader("Résultat de la prédiction")
+                            optimal_threshold = 0.08
 
-                # Afficher le seuil
-                st.markdown(f"**Seuil utilisé pour la décision : {optimal_threshold:.2f}**")
+                            # Afficher la jauge avec Plotly
+                            fig = go.Figure(go.Indicator(
+                                mode="gauge+number",
+                                value=prediction,
+                                domain={'x': [0, 1], 'y': [0, 1]},
+                                title={'text': "Probabilité de défaut", 'font': {'size': 24}},
+                                gauge={
+                                    'axis': {'range': [0, 1], 'tickwidth': 1, 'tickcolor': "darkblue"},
+                                    'bar': {'color': "green" if prediction < optimal_threshold else "red"},
+                                    'steps': [
+                                        {'range': [0, optimal_threshold], 'color': 'lightgreen'},
+                                        {'range': [optimal_threshold, 1], 'color': 'lightcoral'}
+                                    ],
+                                    'threshold': {
+                                        'line': {'color': "blue", 'width': 4},
+                                        'thickness': 0.75,
+                                        'value': optimal_threshold
+                                    }
+                                }
+                            ))
+
+                            st.plotly_chart(fig)
+
+                            # Afficher le texte de la décision
+                            if prediction > optimal_threshold:
+                                st.error(f"Crédit REFUSÉ (Probabilité de défaut : {prediction:.2f})")
+                            else:
+                                st.success(f"Crédit ACCEPTÉ (Probabilité de défaut : {prediction:.2f})")
 
                 # SECTION 2 : Graphique des 10 principales caractéristiques locales importantes
                 st.subheader("Caractéristiques locales")
