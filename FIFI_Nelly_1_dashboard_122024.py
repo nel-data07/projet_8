@@ -444,19 +444,6 @@ if selected == "Prédiction nouveau client":
         code_gender_f = 1 if new_gender == "Femme" else 0
         code_gender_m = 1 if new_gender == "Homme" else 0
 
-        # Afficher un tableau récapitulatif des informations saisies
-        st.subheader("Résumé des informations saisies")
-        user_data = {
-            "Sexe": new_gender,
-            "Âge (années)": new_age,
-            "Nombre d'enfants": new_children,
-            "Revenu annuel total (€)": new_income,
-            "Montant des biens (€)": new_goods_price,
-            "Montant du crédit (€)": new_credit_amount,
-        }
-        user_data_df = pd.DataFrame(user_data.items(), columns=["Caractéristique", "Valeur"])
-        st.table(user_data_df)
-
         # Envoyer la requête pour obtenir le score et la probabilité
         if st.button("Calculer le Score et la Probabilité"):
             # Préparer les données pour les colonnes nécessaires
@@ -525,43 +512,6 @@ if selected == "Prédiction nouveau client":
                     ax.text(imp, i, f'{imp:.2f}', ha='left', va='center', color='black')
 
                 st.pyplot(fig)
-
-                # SECTION 3 : Graphique comparatif des caractéristiques locales et globales
-                st.subheader("Comparaison des caractéristiques locales et globales")
-
-                # Appel à l'API pour obtenir les importances globales
-                global_response = requests.get(f"{API_URL}/get_global_importance")
-                if global_response.status_code == 200:
-                    global_data = global_response.json().get("global_importances", [])
-                    global_shap_df = pd.DataFrame(global_data)
-
-                    # Fusion des données locales et globales
-                    comparison_df = shap_df_top.merge(global_shap_df, on="Feature", how="inner")
-                    # Renommer les colonnes pour le graphique
-                    comparison_df.rename(columns={
-                        "Importance": "Importance locale",
-                        "Global Importance": "Importance globale"
-                    }, inplace=True)
-
-                    # Créer un graphique comparatif
-                    fig, ax = plt.subplots(figsize=(12, 8))
-                    comparison_df.plot(
-                        x="Feature",
-                        y=["Importance locale", "Importance globale"],
-                        kind="bar",
-                        ax=ax,
-                        color=["#1f77b4", "#ff7f0e"],
-                        title="Comparaison des caractéristiques locales et globales"
-                    )
-                    ax.set_ylabel("Importance")
-                    ax.set_xlabel("Caractéristiques")
-                    plt.xticks(rotation=45, ha="right")
-
-                    # Afficher le graphique
-                    st.pyplot(fig)
-
-                else:
-                    st.warning("Impossible de récupérer les importances globales. Vérifiez l'API.")
 
             else:
                 st.error("Erreur lors du calcul de la probabilité pour le nouveau client.")
