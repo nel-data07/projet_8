@@ -444,6 +444,19 @@ if selected == "Prédiction nouveau client":
         code_gender_f = 1 if new_gender == "Femme" else 0
         code_gender_m = 1 if new_gender == "Homme" else 0
 
+        # Afficher un tableau récapitulatif des informations saisies
+        st.subheader("Résumé des informations saisies")
+        user_data = {
+            "Sexe": new_gender,
+            "Âge (années)": new_age,
+            "Nombre d'enfants": new_children,
+            "Revenu annuel total (€)": new_income,
+            "Montant des biens (€)": new_goods_price,
+            "Montant du crédit (€)": new_credit_amount,
+        }
+        user_data_df = pd.DataFrame(user_data.items(), columns=["Caractéristique", "Valeur"])
+        st.table(user_data_df)
+
         # Envoyer la requête pour obtenir le score et la probabilité
         if st.button("Calculer le Score et la Probabilité"):
             # Préparer les données pour les colonnes nécessaires
@@ -464,16 +477,91 @@ if selected == "Prédiction nouveau client":
             if response.status_code == 200:
                 data = response.json()
                 prediction = data.get("probability_of_default", None)
+                shap_values = data.get("shap_values", [])
+                feature_names = data.get("feature_names", [])
 
                 # Définir le seuil optimal
                 optimal_threshold = 0.08
-                if prediction > optimal_threshold:
-                    st.error(f"Crédit REFUSÉ (Probabilité de défaut : {prediction:.2f})")
-                else:
-                    st.success(f"Crédit ACCEPTÉ (Probabilité de défaut : {prediction:.2f})")
+                st.subheader("Résultat de la prédiction")
 
-                # Afficher le seuil utilisé
-                st.markdown(f"**Seuil utilisé pour la décision : {optimal_threshold:.2f}**")
+                # Afficher la jauge avec Plotly
+                fig = go.Figure(go.Indicator(
+                    mode="gauge+number",
+                    value=prediction,
+                    domain={'x': [0, 1], 'y': [0, 1]},
+                    title={'text': "Probabilité de défaut", 'font': {'size': 24}},
+                    gauge={
+                        'axis': {'range': [0, 1], 'tickwidth': 1, 'tickcolor': "darkblue"},
+                        'bar': {'color': "green" if prediction < optimal_threshold else "red"},
+                        'steps': [
+                            {'range': [0, optimal_threshold], 'color': 'lightgreen'},
+                            {'range': [optimal_threshold, 1], 'color': 'lightcoral'}
+                        ],
+                        'threshold': {
+                            'line': {'color': "blue", 'width': 4},
+                            'thickness': 0.75,
+                            'value': optimal_threshold
+                        }
+                    }
+                ))
+
+                st.plotly_chart(fig)
+
+                # SECTION 2 : Graphique des 10 principales caractéristiques locales importantes
+                st.subheader("Caractéristiques locales importantes")
+                shap_df = pd.DataFrame({'Feature': feature_names, 'Importance': shap_values})
+                shap_df = shap_df.sort_values(by='Importance', ascending=False)
+                shap_df_top = shap_df.head(10)
+
+                # Graphique des SHAP values
+                fig, ax = plt.subplots(figsize=(10, 8))  # Taille ajustée
+                sns.barplot(x='Importance', y='Feature', data=shap_df_top, palette="viridis", ax=ax)
+                ax.set_title('Top 10 des caractéristiques locales importantes (SHAP values)', fontsize=14)
+                ax.set_xlabel("Importance", fontsize=12)
+                ax.set_ylabel("Caractéristiques", fontsize=12)
+
+                # Ajouter des annotations
+                for i, (imp, feature) in enumerate(zip(shap_df_top['Importance'], shap_df_top['Feature'])):
+                    ax.text(imp, i, f'{imp:.2f}', ha='left', va='center', color='black')
+
+                st.pyplot(fig)
+
+                # SECTION 3 : Graphique comparatif des caractéristiques locales et globales
+                st.subheader("Comparaison des caractéristiques locales et globales")
+
+                # Appel à l'API pour obtenir les importances globales
+                global_response = requests.get(f"{API_URL}/get_global_importance")
+                if global_response.status_code == 200:
+                    global_data = global_response.json().get("global_importances", [])
+                    global_shap_df = pd.DataFrame(global_data)
+
+                    # Fusion des données locales et globales
+                    comparison_df = shap_df_top.merge(global_shap_df, on="Feature", how="inner")
+                    # Renommer les colonnes pour le graphique
+                    comparison_df.rename(columns={
+                        "Importance": "Importance locale",
+                        "Global Importance": "Importance globale"
+                    }, inplace=True)
+
+                    # Créer un graphique comparatif
+                    fig, ax = plt.subplots(figsize=(12, 8))
+                    comparison_df.plot(
+                        x="Feature",
+                        y=["Importance locale", "Importance globale"],
+                        kind="bar",
+                        ax=ax,
+                        color=["#1f77b4", "#ff7f0e"],
+                        title="Comparaison des caractéristiques locales et globales"
+                    )
+                    ax.set_ylabel("Importance")
+                    ax.set_xlabel("Caractéristiques")
+                    plt.xticks(rotation=45, ha="right")
+
+                    # Afficher le graphique
+                    st.pyplot(fig)
+
+                else:
+                    st.warning("Impossible de récupérer les importances globales. Vérifiez l'API.")
 
             else:
                 st.error("Erreur lors du calcul de la probabilité pour le nouveau client.")
