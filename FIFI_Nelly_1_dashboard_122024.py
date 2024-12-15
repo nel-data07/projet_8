@@ -68,19 +68,17 @@ if selected == "Accueil":
     )
 
 ############################################################################################################################# page prediction
+##### Page Prédictions
 if selected == "Prédictions":
     st.title("Prédictions pour un Client Existant")
 
-    # Récupérer les IDs clients
     response = requests.get(f"{API_URL}/get_client_ids")
     client_ids = response.json().get("client_ids", []) if response.status_code == 200 else []
 
     if client_ids:
-        # Sélection de l'ID client
         selected_id = st.selectbox("Choisissez un ID client (SK_ID_CURR)", client_ids)
 
         if st.button("Obtenir la prédiction"):
-            # Appel à l'API pour obtenir les prédictions
             response = requests.post(f"{API_URL}/predict", json={"SK_ID_CURR": selected_id})
             if response.status_code == 200:
                 data = response.json()
@@ -93,7 +91,6 @@ if selected == "Prédictions":
                 st.subheader("Informations descriptives du client")
 
                 if client_info:  # Vérifiez si les informations sont disponibles
-                    # Extraire uniquement les caractéristiques pertinentes
                     filtered_info = {
                         "Sexe": "Femme" if client_info.get("CODE_GENDER_F", 0) == 1 else "Homme",
                         "Âge (années)": abs(client_info.get("DAYS_BIRTH", 0)) // 365,
@@ -103,45 +100,43 @@ if selected == "Prédictions":
                         "Durée d'emploi (années)": abs(client_info.get("DAYS_EMPLOYED", 0)) // 365 
                                                     if client_info.get("DAYS_EMPLOYED", 0) < 0 else "Non employé"
                     }
-
-                    # Convertir en DataFrame pour affichage
                     filtered_info_df = pd.DataFrame(filtered_info.items(), columns=["Caractéristique", "Valeur"])
                     st.table(filtered_info_df)
                 else:
                     st.warning("Les informations descriptives du client ne sont pas disponibles.")
 
-             # SECTION 1 : Résultat de la prédiction avec jauge
-                            st.subheader("Résultat de la prédiction")
-                            optimal_threshold = 0.08
+                # SECTION 1 : Résultat de la prédiction avec jauge
+                st.subheader("Résultat de la prédiction")
+                optimal_threshold = 0.08
 
-                            # Afficher la jauge avec Plotly
-                            fig = go.Figure(go.Indicator(
-                                mode="gauge+number",
-                                value=prediction,
-                                domain={'x': [0, 1], 'y': [0, 1]},
-                                title={'text': "Probabilité de défaut", 'font': {'size': 24}},
-                                gauge={
-                                    'axis': {'range': [0, 1], 'tickwidth': 1, 'tickcolor': "darkblue"},
-                                    'bar': {'color': "green" if prediction < optimal_threshold else "red"},
-                                    'steps': [
-                                        {'range': [0, optimal_threshold], 'color': 'lightgreen'},
-                                        {'range': [optimal_threshold, 1], 'color': 'lightcoral'}
-                                    ],
-                                    'threshold': {
-                                        'line': {'color': "blue", 'width': 4},
-                                        'thickness': 0.75,
-                                        'value': optimal_threshold
-                                    }
-                                }
-                            ))
+                # Afficher la jauge avec Plotly
+                fig = go.Figure(go.Indicator(
+                    mode="gauge+number",
+                    value=prediction,
+                    domain={'x': [0, 1], 'y': [0, 1]},
+                    title={'text': "Probabilité de défaut", 'font': {'size': 24}},
+                    gauge={
+                        'axis': {'range': [0, 1], 'tickwidth': 1, 'tickcolor': "darkblue"},
+                        'bar': {'color': "green" if prediction < optimal_threshold else "red"},
+                        'steps': [
+                            {'range': [0, optimal_threshold], 'color': 'lightgreen'},
+                            {'range': [optimal_threshold, 1], 'color': 'lightcoral'}
+                        ],
+                        'threshold': {
+                            'line': {'color': "blue", 'width': 4},
+                            'thickness': 0.75,
+                            'value': optimal_threshold
+                        }
+                    }
+                ))
 
-                            st.plotly_chart(fig)
+                st.plotly_chart(fig)
 
-                            # Afficher le texte de la décision
-                            if prediction > optimal_threshold:
-                                st.error(f"Crédit REFUSÉ (Probabilité de défaut : {prediction:.2f})")
-                            else:
-                                st.success(f"Crédit ACCEPTÉ (Probabilité de défaut : {prediction:.2f})")
+                # Afficher le texte de la décision
+                if prediction > optimal_threshold:
+                    st.error(f"Crédit REFUSÉ (Probabilité de défaut : {prediction:.2f})")
+                else:
+                    st.success(f"Crédit ACCEPTÉ (Probabilité de défaut : {prediction:.2f})")
 
                 # SECTION 2 : Graphique des 10 principales caractéristiques locales importantes
                 st.subheader("Caractéristiques locales")
