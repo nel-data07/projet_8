@@ -404,7 +404,7 @@ if selected == "Modification des informations":
 
                         st.plotly_chart(fig)
 
-                   else:
+                    else:
                         st.error("Erreur lors de la mise à jour ou de la prédiction.")
             else:
                 st.error("Impossible de récupérer les informations du client.")
