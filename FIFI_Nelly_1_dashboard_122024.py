@@ -132,12 +132,6 @@ if selected == "Prédictions":
 
                 st.plotly_chart(fig)
 
-                # Afficher le texte de la décision
-                if prediction > optimal_threshold:
-                    st.error(f"Crédit REFUSÉ (Probabilité de défaut : {prediction:.2f})")
-                else:
-                    st.success(f"Crédit ACCEPTÉ (Probabilité de défaut : {prediction:.2f})")
-
                 # SECTION 2 : Graphique des 10 principales caractéristiques locales importantes
                 st.subheader("Caractéristiques locales")
                 shap_df = pd.DataFrame({'Feature': feature_names, 'Importance': shap_values})
@@ -348,64 +342,74 @@ if selected == "Modification des informations":
         # Sélection de l'ID client
         selected_id = st.selectbox("Choisissez un ID client (SK_ID_CURR)", client_ids)
 
-        # Saisie des informations modifiables
-        new_income = st.number_input("Revenus annuel total du client (€)", value=0.0, step=1000.0, min_value=0.0)
-        new_credit_amount = st.number_input("Montant du crédit (€)", value=0.0, step=1000.0, min_value=0.0)
-        new_children = st.number_input("Nombre d'enfants", value=0, step=1, min_value=0)
-        new_goods_price = st.number_input("Montant des biens (€)", value=0.0, step=1000.0, min_value=0.0)
-
-        # Bouton pour mettre à jour et recalculer
-        if st.button("Mettre à jour et prédire"):
-            # Préparer les données pour la requête
-            payload = {
-                "SK_ID_CURR": selected_id,
-                "AMT_INCOME_TOTAL": new_income,
-                "AMT_CREDIT": new_credit_amount,
-                "CNT_CHILDREN": new_children,
-                "AMT_GOODS_PRICE": new_goods_price
-            }
-
-            # Envoyer les données modifiées à l'API
-            response = requests.post(f"{API_URL}/predict_with_custom_values", json=payload)
-
+        # Récupération des informations initiales du client
+        if selected_id:
+            response = requests.post(f"{API_URL}/get_client_info", json={"SK_ID_CURR": selected_id})
             if response.status_code == 200:
-                data = response.json()
-                prediction = data.get("probability_of_default", None)
-                shap_values = data.get("shap_values", [])
-                feature_names = data.get("feature_names", [])
+                client_info = response.json().get("client_info", {})
+                # Extraire les valeurs actuelles ou fournir des valeurs par défaut
+                current_income = client_info.get("AMT_INCOME_TOTAL", 0.0)
+                current_credit_amount = client_info.get("AMT_CREDIT", 0.0)
+                current_children = client_info.get("CNT_CHILDREN", 0)
+                current_goods_price = client_info.get("AMT_GOODS_PRICE", 0.0)
 
-                # Définir le seuil optimal
-                optimal_threshold = 0.08
-                if prediction > optimal_threshold:
-                    st.error(f"Crédit REFUSÉ (Probabilité de défaut : {prediction:.2f})")
-                else:
-                    st.success(f"Crédit ACCEPTÉ (Probabilité de défaut : {prediction:.2f})")
+                # Affichage des champs avec valeurs actuelles
+                new_income = st.number_input("Revenus annuel total du client (€)", value=current_income, step=1000.0, min_value=0.0)
+                new_credit_amount = st.number_input("Montant du crédit (€)", value=current_credit_amount, step=1000.0, min_value=0.0)
+                new_children = st.number_input("Nombre d'enfants", value=current_children, step=1, min_value=0)
+                new_goods_price = st.number_input("Montant des biens (€)", value=current_goods_price, step=1000.0, min_value=0.0)
 
-                # Afficher le seuil utilisé
-                st.markdown(f"**Seuil utilisé pour la décision : {optimal_threshold:.2f}**")
+                # Bouton pour mettre à jour et recalculer
+                if st.button("Mettre à jour et prédire"):
+                    # Préparer les données pour la requête
+                    payload = {
+                        "SK_ID_CURR": selected_id,
+                        "AMT_INCOME_TOTAL": new_income,
+                        "AMT_CREDIT": new_credit_amount,
+                        "CNT_CHILDREN": new_children,
+                        "AMT_GOODS_PRICE": new_goods_price
+                    }
 
-                # Graphique des caractéristiques influentes
-                st.subheader("Top 10 des caractéristiques influentes")
-                shap_df = pd.DataFrame({'Feature': feature_names, 'Importance': shap_values})
-                shap_df = shap_df.sort_values(by='Importance', ascending=False).head(10)
+                    # Envoyer les données modifiées à l'API
+                    response = requests.post(f"{API_URL}/predict_with_custom_values", json=payload)
 
-                fig, ax = plt.subplots(figsize=(8, 6))
-                sns.barplot(x='Importance', y='Feature', data=shap_df, palette="viridis", ax=ax)
-                ax.set_title('Top 10 des caractéristiques influentes (valeurs SHAP)', fontsize=14)
-                ax.set_xlabel("Importance (SHAP)", fontsize=12)
-                ax.set_ylabel("Caractéristiques", fontsize=12)
+                    if response.status_code == 200:
+                        data = response.json()
+                        prediction = data.get("probability_of_default", None)
 
-                # Ajouter des annotations
-                for i, (imp, feature) in enumerate(zip(shap_df['Importance'], shap_df['Feature'])):
-                    ax.text(imp, i, f'{imp:.2f}', ha='left', va='center', color='black')
+                        # Définir le seuil optimal
+                        optimal_threshold = 0.08
+                        st.subheader("Résultat de la prédiction")
 
-                st.pyplot(fig)
+                        # Afficher la jauge avec Plotly
+                        fig = go.Figure(go.Indicator(
+                            mode="gauge+number",
+                            value=prediction,
+                            domain={'x': [0, 1], 'y': [0, 1]},
+                            title={'text': "Probabilité de défaut", 'font': {'size': 24}},
+                            gauge={
+                                'axis': {'range': [0, 1], 'tickwidth': 1, 'tickcolor': "darkblue"},
+                                'bar': {'color': "green" if prediction < optimal_threshold else "red"},
+                                'steps': [
+                                    {'range': [0, optimal_threshold], 'color': 'lightgreen'},
+                                    {'range': [optimal_threshold, 1], 'color': 'lightcoral'}
+                                ],
+                                'threshold': {
+                                    'line': {'color': "blue", 'width': 4},
+                                    'thickness': 0.75,
+                                    'value': optimal_threshold
+                                }
+                            }
+                        ))
 
+                        st.plotly_chart(fig)
+
+                   else:
+                        st.error("Erreur lors de la mise à jour ou de la prédiction.")
             else:
-                st.error("Erreur lors de la mise à jour ou de la prédiction.")
+                st.error("Impossible de récupérer les informations du client.")
     else:
         st.warning("Aucun client disponible. Veuillez vérifier les données ou l'API.")
-
 
 ############################################################################################### Page "Prédiction nouveau client"
 if selected == "Prédiction nouveau client":
