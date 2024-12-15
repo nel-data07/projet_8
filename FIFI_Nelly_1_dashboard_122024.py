@@ -342,11 +342,12 @@ if selected == "Modification des informations":
         # Sélection de l'ID client
         selected_id = st.selectbox("Choisissez un ID client (SK_ID_CURR)", client_ids)
 
-        # Récupération des informations initiales du client
+        # Utiliser l'endpoint /predict pour récupérer les informations du client
         if selected_id:
-            response = requests.post(f"{API_URL}/get_client_info", json={"SK_ID_CURR": selected_id})
+            response = requests.post(f"{API_URL}/predict", json={"SK_ID_CURR": selected_id})
             if response.status_code == 200:
-                client_info = response.json().get("client_info", {})
+                data = response.json()
+                client_info = data.get("client_info", {})
                 # Extraire les valeurs actuelles ou fournir des valeurs par défaut
                 current_income = client_info.get("AMT_INCOME_TOTAL", 0.0)
                 current_credit_amount = client_info.get("AMT_CREDIT", 0.0)
