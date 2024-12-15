@@ -348,11 +348,12 @@ if selected == "Modification des informations":
             if response.status_code == 200:
                 data = response.json()
                 client_info = data.get("client_info", {})
-                # Extraire les valeurs actuelles ou fournir des valeurs par défaut
-                current_income = client_info.get("AMT_INCOME_TOTAL", 0.0)
-                current_credit_amount = client_info.get("AMT_CREDIT", 0.0)
-                current_children = client_info.get("CNT_CHILDREN", 0)
-                current_goods_price = client_info.get("AMT_GOODS_PRICE", 0.0)
+
+                # Convertir les valeurs récupérées en types numériques appropriés
+                current_income = float(client_info.get("AMT_INCOME_TOTAL", 0.0))
+                current_credit_amount = float(client_info.get("AMT_CREDIT", 0.0))
+                current_children = int(client_info.get("CNT_CHILDREN", 0))
+                current_goods_price = float(client_info.get("AMT_GOODS_PRICE", 0.0))
 
                 # Affichage des champs avec valeurs actuelles
                 new_income = st.number_input("Revenus annuel total du client (€)", value=current_income, step=1000.0, min_value=0.0)
